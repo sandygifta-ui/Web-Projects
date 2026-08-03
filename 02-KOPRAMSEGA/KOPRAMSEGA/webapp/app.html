@@ -1,0 +1,464 @@
+// ========== STATE ==========
+var currentUser = null;
+var currentPage = 'dashboard';
+var timerInterval = null;
+var timerSeconds = 0;
+var timerRunning = false;
+var timerTotal = 0;
+var tapCount = 0;
+var tapTimer = null;
+
+// ========== AUTH (HARDCODE - edit langsung di sini untuk ubah akun) ==========
+var USERS = [
+  // === ANGGOTA BIASA ===
+  { email: 'anggota@kopramsega.id', password: 'user123', user: { id: 'USR-003', nama: 'Anggota Pramuka', kelas: '-', email: 'anggota@kopramsega.id', role: 'USR', foto: '' } },
+
+  // === ADMIN ===
+  { email: 'admin@kopramsega.id',   password: 'admin123', user: { id: 'USR-001', nama: 'Admin KOPRAMSEGA', kelas: '-', email: 'admin@kopramsega.id',   role: 'SA',  foto: '' } },
+
+  // === DEWAN AMBALAN ===
+  { email: 'dewan@kopramsega.id',   password: 'dewan123', user: { id: 'USR-002', nama: 'Dewan Ambalan',   kelas: '-', email: 'dewan@kopramsega.id',   role: 'ADM', foto: '' } }
+];
+
+function cariUser(email, password) {
+  for (var i = 0; i < USERS.length; i++) {
+    if (USERS[i].email === email && USERS[i].password === password) {
+      return USERS[i].user;
+    }
+  }
+  return null;
+}
+
+function doLoginUser() {
+  var email = document.getElementById('input-email-user').value.trim();
+  var pass  = document.getElementById('input-pass-user').value.trim();
+  if (!email || !pass) { showErrorLogin('login-error-user', 'Email dan password wajib diisi.'); return; }
+  var found = cariUser(email, pass);
+  if (found) { masukApp(found); }
+  else { showErrorLogin('login-error-user', 'Email atau password salah.'); }
+}
+
+function doLoginAdmin() {
+  var email = document.getElementById('input-email-admin').value.trim();
+  var pass  = document.getElementById('input-pass-admin').value.trim();
+  if (!email || !pass) { showErrorLogin('login-error-admin', 'Email dan password wajib diisi.'); return; }
+  var found = cariUser(email, pass);
+  if (found && (found.role === 'SA' || found.role === 'ADM')) { masukApp(found); }
+  else { showErrorLogin('login-error-admin', 'Email atau password admin salah.'); }
+}
+
+function masukApp(user) {
+  currentUser = user;
+  document.getElementById('header-username').textContent = user.nama;
+  document.getElementById('page-login').style.display = 'none';
+  document.getElementById('page-main').style.display = 'block';
+  showPage('dashboard');
+}
+
+function showErrorLogin(id, msg) {
+  var el = document.getElementById(id);
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function setLoadingLogin(type, loading) {
+  var btn = document.getElementById('btn-login-' + type);
+  var txt = document.getElementById('login-text-' + type);
+  var load = document.getElementById('login-loading-' + type);
+  btn.disabled = loading;
+  txt.style.display = loading ? 'none' : 'inline';
+  load.style.display = loading ? 'inline' : 'none';
+}
+
+// Tap footer 5x untuk munculkan login admin
+function tapLogo() {
+  tapCount++;
+  clearTimeout(tapTimer);
+  tapTimer = setTimeout(function() { tapCount = 0; }, 2000);
+  if (tapCount >= 5) {
+    tapCount = 0;
+    var adminCard = document.getElementById('card-admin');
+    adminCard.style.display = adminCard.style.display === 'none' ? 'block' : 'none';
+  }
+}
+
+// ========== NAVIGATION ==========
+
+function logout() {
+  if (!confirm('Yakin ingin keluar?')) return;
+  currentUser = null;
+  document.getElementById('page-main').style.display = 'none';
+  document.getElementById('page-login').style.display = 'block';
+  document.getElementById('input-email-user').value = '';
+  document.getElementById('input-pass-user').value = '';
+  document.getElementById('card-admin').style.display = 'none';
+}
+
+// ========== NAVIGATION ==========
+function showPage(page) {
+  currentPage = page;
+  document.querySelectorAll('.nav-item').forEach(function(el) { el.classList.remove('active'); });
+  var navEl = document.getElementById('nav-' + page);
+  if (navEl) navEl.classList.add('active');
+  var area = document.getElementById('content-area');
+  area.innerHTML = '<div class="empty-state"><div class="empty-icon">⏳</div><p>Memuat...</p></div>';
+  if (page === 'dashboard') renderDashboard();
+  else if (page === 'jadwal') renderJadwal();
+  else if (page === 'timer') renderTimer();
+  else if (page === 'latihan') renderLatihan();
+  else if (page === 'pengumuman') renderPengumuman();
+}
+
+function isAdmin() { return currentUser && (currentUser.role === 'SA' || currentUser.role === 'ADM'); }
+
+// ========== MODAL ==========
+function openModal(title, body) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-body').innerHTML = body;
+  document.getElementById('modal-overlay').style.display = 'flex';
+}
+function closeModal() { document.getElementById('modal-overlay').style.display = 'none'; }
+
+// ========== TOAST ==========
+function showToast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg; t.style.display = 'block';
+  setTimeout(function() { t.style.display = 'none'; }, 2500);
+}
+
+// ========== DASHBOARD ==========
+function renderDashboard() {
+  google.script.run.withSuccessHandler(function(res) {
+    var html = '';
+    var hari = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+    var bulan = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+    var now = new Date();
+    var tgl = hari[now.getDay()] + ', ' + now.getDate() + ' ' + bulan[now.getMonth()] + ' ' + now.getFullYear();
+    html += '<div class="greeting-card">';
+    html += '<div class="greeting-name">Halo, ' + currentUser.nama + '! 👋</div>';
+    html += '<div class="greeting-date">' + tgl + '</div>';
+    html += '<span class="greeting-role">⚜️ ' + (currentUser.role === 'SA' ? 'Super Admin' : currentUser.role === 'ADM' ? 'Admin' : 'Anggota') + '</span>';
+    html += '</div>';
+    if (res.success) {
+      html += '<div class="stat-grid">';
+      html += '<div class="stat-card"><div class="stat-icon">📅</div><div class="stat-val">' + (res.jadwalTerdekat ? '1' : '0') + '</div><div class="stat-label">Jadwal Terdekat</div></div>';
+      html += '<div class="stat-card"><div class="stat-icon">📝</div><div class="stat-val">' + res.latihanAktif + '</div><div class="stat-label">Latihan Aktif</div></div>';
+      html += '</div>';
+      if (res.jadwalTerdekat) {
+        html += '<div class="section-title">📅 Jadwal Terdekat</div>';
+        html += '<div class="card"><div class="card-header"><span class="fw-600">' + res.jadwalTerdekat.judul + '</span><span class="badge badge-biru">' + res.jadwalTerdekat.kategori + '</span></div>';
+        html += '<div class="text-sm text-muted">📆 ' + res.jadwalTerdekat.tanggal + ' · ⏰ ' + res.jadwalTerdekat.jam + '</div>';
+        html += '<div class="text-sm mt-4">📍 ' + res.jadwalTerdekat.lokasi + '</div></div>';
+      }
+      if (res.pengumumanPin.length > 0) {
+        html += '<div class="section-title">📌 Pengumuman Penting</div>';
+        res.pengumumanPin.forEach(function(p) {
+          html += '<div class="pengumuman-card pinned"><h4>' + p.judul + '</h4><div class="pengumuman-isi">' + p.isi.substring(0,100) + (p.isi.length > 100 ? '...' : '') + '</div></div>';
+        });
+      }
+    }
+    document.getElementById('content-area').innerHTML = html;
+  }).getDashboard();
+}
+
+// ========== JADWAL ==========
+var allJadwal = [];
+var jadwalFilter = 'Semua';
+function renderJadwal() {
+  var fab = isAdmin() ? '<button class="fab" onclick="openFormJadwal()">+</button>' : '';
+  document.getElementById('content-area').innerHTML = '<div id="jadwal-content"></div>' + fab;
+  google.script.run.withSuccessHandler(function(res) {
+    allJadwal = res.success ? res.data : [];
+    renderJadwalList();
+  }).getJadwal();
+}
+function renderJadwalList() {
+  var kategori = ['Semua','Pioneering','Semaphore','PBB','Materi','Forum'];
+  var html = '<div class="filter-tabs">';
+  kategori.forEach(function(k) {
+    html += '<div class="filter-tab ' + (jadwalFilter===k?'active':'') + '" onclick="filterJadwal(\'' + k + '\')">' + k + '</div>';
+  });
+  html += '</div>';
+  var filtered = jadwalFilter === 'Semua' ? allJadwal : allJadwal.filter(function(j) { return j.kategori === jadwalFilter; });
+  if (filtered.length === 0) {
+    html += '<div class="empty-state"><div class="empty-icon">📭</div><p>Belum ada jadwal</p></div>';
+  } else {
+    filtered.forEach(function(j) {
+      html += '<div class="jadwal-card ' + (j.status==='Selesai'?'selesai':'') + '">';
+      html += '<div class="jadwal-info"><div class="flex-between">';
+      html += '<h4>' + j.judul + '</h4><span class="badge ' + (j.status==='Selesai'?'badge-abu':'badge-biru') + '">' + j.status + '</span></div>';
+      html += '<div class="jadwal-meta">📅 ' + j.tanggal + ' · ⏰ ' + j.jam + '</div>';
+      html += '<div class="jadwal-meta">📍 ' + j.lokasi + ' · <span class="badge-emas">' + j.kategori + '</span></div>';
+      if (j.materi) html += '<div class="text-sm mt-4">📖 ' + j.materi + '</div>';
+      if (isAdmin()) html += '<div class="jadwal-actions"><button class="btn-danger" onclick="hapusJadwal(\'' + j.id + '\')">Hapus</button></div>';
+      html += '</div></div>';
+    });
+  }
+  document.getElementById('jadwal-content').innerHTML = html;
+}
+function filterJadwal(k) { jadwalFilter = k; renderJadwalList(); }
+function hapusJadwal(id) {
+  if (!confirm('Hapus jadwal ini?')) return;
+  google.script.run.withSuccessHandler(function(r) {
+    if (r.success) { showToast('Jadwal dihapus'); renderJadwal(); }
+    else showToast('Gagal: ' + r.message);
+  }).deleteJadwal(id);
+}
+function openFormJadwal() {
+  openModal('Tambah Jadwal',
+    '<div class="form-group"><label>JUDUL</label><input id="f-judul" placeholder="Judul kegiatan"></div>' +
+    '<div class="form-group"><label>KATEGORI</label><select id="f-kat"><option>Pioneering</option><option>Semaphore</option><option>PBB</option><option>Materi</option><option>Forum</option></select></div>' +
+    '<div class="form-group"><label>TANGGAL</label><input type="date" id="f-tgl"></div>' +
+    '<div class="form-group"><label>JAM</label><input type="time" id="f-jam"></div>' +
+    '<div class="form-group"><label>MATERI</label><input id="f-materi" placeholder="Materi yang dibahas"></div>' +
+    '<div class="form-group"><label>PEMBINA</label><input id="f-pembina" placeholder="Nama pembina"></div>' +
+    '<div class="form-group"><label>LOKASI</label><input id="f-lokasi" placeholder="Lokasi kegiatan"></div>' +
+    '<div class="form-group"><label>KETERANGAN</label><textarea id="f-ket" placeholder="Keterangan tambahan (opsional)"></textarea></div>' +
+    '<button class="btn-primary" onclick="submitJadwal()">Simpan Jadwal</button>'
+  );
+}
+function submitJadwal() {
+  var data = {
+    judul: document.getElementById('f-judul').value,
+    kategori: document.getElementById('f-kat').value,
+    tanggal: document.getElementById('f-tgl').value,
+    jam: document.getElementById('f-jam').value,
+    materi: document.getElementById('f-materi').value,
+    pembina: document.getElementById('f-pembina').value,
+    lokasi: document.getElementById('f-lokasi').value,
+    keterangan: document.getElementById('f-ket').value,
+    dibuatOleh: currentUser.id
+  };
+  if (!data.judul || !data.tanggal || !data.jam || !data.lokasi) { showToast('Judul, tanggal, jam, lokasi wajib diisi!'); return; }
+  google.script.run.withSuccessHandler(function(r) {
+    if (r.success) { closeModal(); showToast('Jadwal berhasil ditambahkan!'); renderJadwal(); }
+    else showToast('Gagal: ' + r.message);
+  }).addJadwal(data);
+}
+
+// ========== TIMER ==========
+function renderTimer() {
+  var html = '<div class="section-title">⏱️ Timer Kegiatan</div>';
+  html += '<div class="timer-display"><div class="timer-time" id="timer-display">00:00:00</div><div class="timer-label" id="timer-label">Siap dimulai</div></div>';
+  html += '<div class="timer-controls">';
+  html += '<button class="timer-btn timer-btn-start" id="btn-start" onclick="startTimer()">▶ Mulai</button>';
+  html += '<button class="timer-btn timer-btn-pause" id="btn-pause" onclick="pauseTimer()" style="display:none">⏸ Pause</button>';
+  html += '<button class="timer-btn timer-btn-reset" onclick="resetTimer()">↺ Reset</button>';
+  html += '</div>';
+  html += '<div class="form-group"><label>DURASI MANUAL (menit)</label>';
+  html += '<div style="display:flex;gap:8px"><input type="number" id="input-durasi" placeholder="Contoh: 45" min="1" style="flex:1">';
+  html += '<button class="btn-secondary" onclick="setDurasiManual()">Set</button></div></div>';
+  html += '<div class="section-title mt-12">📋 Preset Durasi</div>';
+  html += '<div id="preset-list"><div class="empty-state"><div class="empty-icon">⏳</div><p>Memuat...</p></div></div>';
+  if (isAdmin()) {
+    html += '<button class="fab" onclick="openFormPreset()">+</button>';
+  }
+  document.getElementById('content-area').innerHTML = html;
+  loadPresets();
+}
+function loadPresets() {
+  google.script.run.withSuccessHandler(function(res) {
+    if (!res.success || res.data.length === 0) {
+      document.getElementById('preset-list').innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div><p>Belum ada preset</p></div>';
+      return;
+    }
+    var html = '<div class="preset-grid">';
+    res.data.forEach(function(p) {
+      var mnt = Math.floor(p.durasi/60); var dtk = p.durasi%60;
+      var label = mnt > 0 ? mnt + ' menit' : dtk + ' detik';
+      html += '<div class="preset-card" onclick="setPreset(' + p.durasi + ',\'' + p.nama + '\')">';
+      html += '<h4>' + p.nama + '</h4><span>⏱ ' + label + '</span>';
+      if (isAdmin()) html += '<br><button class="btn-danger" style="margin-top:8px;font-size:11px;padding:4px 8px" onclick="event.stopPropagation();hapusPreset(\'' + p.id + '\')">Hapus</button>';
+      html += '</div>';
+    });
+    html += '</div>';
+    document.getElementById('preset-list').innerHTML = html;
+  }).getTimerPresets();
+}
+function setDurasiManual() {
+  var mnt = parseInt(document.getElementById('input-durasi').value);
+  if (isNaN(mnt) || mnt < 1) { showToast('Masukkan durasi valid'); return; }
+  setPreset(mnt * 60, mnt + ' Menit');
+}
+function setPreset(detik, nama) {
+  resetTimer();
+  timerSeconds = detik; timerTotal = detik;
+  document.getElementById('timer-display').textContent = formatTime(detik);
+  document.getElementById('timer-label').textContent = nama;
+}
+function startTimer() {
+  if (timerSeconds <= 0) { showToast('Set durasi dulu'); return; }
+  timerRunning = true;
+  document.getElementById('btn-start').style.display = 'none';
+  document.getElementById('btn-pause').style.display = 'inline-block';
+  timerInterval = setInterval(function() {
+    timerSeconds--;
+    document.getElementById('timer-display').textContent = formatTime(timerSeconds);
+    if (timerSeconds <= 0) {
+      clearInterval(timerInterval); timerRunning = false;
+      document.getElementById('btn-start').style.display = 'inline-block';
+      document.getElementById('btn-pause').style.display = 'none';
+      document.getElementById('timer-label').textContent = '✅ Waktu Habis!';
+      alert('⏰ Waktu habis!');
+    }
+  }, 1000);
+}
+function pauseTimer() {
+  clearInterval(timerInterval); timerRunning = false;
+  document.getElementById('btn-start').style.display = 'inline-block';
+  document.getElementById('btn-pause').style.display = 'none';
+}
+function resetTimer() {
+  clearInterval(timerInterval); timerRunning = false;
+  timerSeconds = timerTotal;
+  var el = document.getElementById('timer-display');
+  if (el) el.textContent = formatTime(timerTotal);
+  var el2 = document.getElementById('btn-start');
+  if (el2) { el2.style.display = 'inline-block'; document.getElementById('btn-pause').style.display = 'none'; }
+}
+function formatTime(s) {
+  var h = Math.floor(s/3600); var m = Math.floor((s%3600)/60); var sec = s%60;
+  return pad(h)+':'+pad(m)+':'+pad(sec);
+}
+function pad(n) { return n < 10 ? '0'+n : n; }
+function hapusPreset(id) {
+  if (!confirm('Hapus preset ini?')) return;
+  google.script.run.withSuccessHandler(function(r) {
+    if (r.success) { showToast('Preset dihapus'); loadPresets(); }
+  }).deleteTimerPreset(id);
+}
+function openFormPreset() {
+  openModal('Tambah Preset Timer',
+    '<div class="form-group"><label>NAMA PRESET</label><input id="fp-nama" placeholder="Contoh: Sesi Materi"></div>' +
+    '<div class="form-group"><label>DURASI (menit)</label><input type="number" id="fp-durasi" placeholder="45" min="1"></div>' +
+    '<button class="btn-primary" onclick="submitPreset()">Simpan</button>'
+  );
+}
+function submitPreset() {
+  var nama = document.getElementById('fp-nama').value;
+  var mnt = parseInt(document.getElementById('fp-durasi').value);
+  if (!nama || isNaN(mnt)) { showToast('Isi semua field'); return; }
+  google.script.run.withSuccessHandler(function(r) {
+    if (r.success) { closeModal(); showToast('Preset ditambahkan!'); loadPresets(); }
+  }).addTimerPreset({ nama: nama, durasi: mnt*60, dibuatOleh: currentUser.id });
+}
+
+// ========== LATIHAN SOAL ==========
+function renderLatihan() {
+  var fab = isAdmin() ? '<button class="fab" onclick="openFormLatihan()">+</button>' : '';
+  document.getElementById('content-area').innerHTML = '<div class="section-title">📝 Latihan Soal</div><div id="latihan-list"></div>' + fab;
+  google.script.run.withSuccessHandler(function(res) {
+    if (!res.success || res.data.length === 0) {
+      document.getElementById('latihan-list').innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div><p>Belum ada latihan soal</p></div>';
+      return;
+    }
+    var html = '';
+    res.data.forEach(function(l) {
+      var badgeClass = l.status === 'Aktif' ? 'badge-hijau' : l.status === 'Belum Dibuka' ? 'badge-emas' : 'badge-abu';
+      html += '<div class="latihan-card">';
+      html += '<div class="flex-between mb-8"><h4>' + l.judul + '</h4><span class="badge ' + badgeClass + '">' + l.status + '</span></div>';
+      if (l.deskripsi) html += '<p>' + l.deskripsi + '</p>';
+      html += '<div class="text-xs text-muted">📅 Buka: ' + l.tanggalBuka + '</div>';
+      html += '<div class="text-xs text-muted mt-4">📅 Tutup: ' + l.tanggalTutup + '</div>';
+      if (l.status === 'Aktif' && l.link) {
+        html += '<a href="' + l.link + '" target="_blank" class="btn-akses" style="margin-top:12px;display:inline-block">📝 Kerjakan Sekarang</a>';
+      } else if (l.status !== 'Aktif') {
+        html += '<div class="text-sm text-muted mt-8">🔒 ' + l.status + '</div>';
+      }
+      if (isAdmin()) html += '<button class="btn-danger" style="margin-top:10px" onclick="hapusLatihan(\'' + l.id + '\')">Hapus</button>';
+      html += '</div>';
+    });
+    document.getElementById('latihan-list').innerHTML = html;
+  }).getLatihan();
+}
+function hapusLatihan(id) {
+  if (!confirm('Hapus latihan ini?')) return;
+  google.script.run.withSuccessHandler(function(r) {
+    if (r.success) { showToast('Dihapus'); renderLatihan(); }
+  }).deleteLatihan(id);
+}
+function openFormLatihan() {
+  openModal('Tambah Latihan Soal',
+    '<div class="form-group"><label>JUDUL</label><input id="fl-judul" placeholder="Judul latihan"></div>' +
+    '<div class="form-group"><label>DESKRIPSI</label><textarea id="fl-desk" placeholder="Deskripsi singkat"></textarea></div>' +
+    '<div class="form-group"><label>LINK GOOGLE FORM</label><input id="fl-link" placeholder="https://forms.gle/..."></div>' +
+    '<div class="form-group"><label>TANGGAL BUKA</label><input type="datetime-local" id="fl-buka"></div>' +
+    '<div class="form-group"><label>TANGGAL TUTUP</label><input type="datetime-local" id="fl-tutup"></div>' +
+    '<button class="btn-primary" onclick="submitLatihan()">Simpan</button>'
+  );
+}
+function submitLatihan() {
+  var data = {
+    judul: document.getElementById('fl-judul').value,
+    deskripsi: document.getElementById('fl-desk').value,
+    link: document.getElementById('fl-link').value,
+    tanggalBuka: document.getElementById('fl-buka').value,
+    tanggalTutup: document.getElementById('fl-tutup').value,
+    dibuatOleh: currentUser.id
+  };
+  if (!data.judul || !data.tanggalBuka || !data.tanggalTutup) { showToast('Judul, tanggal buka, tutup wajib diisi'); return; }
+  if (new Date(data.tanggalTutup) <= new Date(data.tanggalBuka)) { showToast('Tanggal tutup harus setelah tanggal buka'); return; }
+  google.script.run.withSuccessHandler(function(r) {
+    if (r.success) { closeModal(); showToast('Latihan ditambahkan!'); renderLatihan(); }
+    else showToast('Gagal: ' + r.message);
+  }).addLatihan(data);
+}
+
+// ========== PENGUMUMAN ==========
+function renderPengumuman() {
+  var fab = isAdmin() ? '<button class="fab" onclick="openFormPengumuman()">+</button>' : '';
+  document.getElementById('content-area').innerHTML = '<div class="section-title">📢 Pengumuman</div><div id="pengumuman-list"></div>' + fab;
+  google.script.run.withSuccessHandler(function(res) {
+    if (!res.success || res.data.length === 0) {
+      document.getElementById('pengumuman-list').innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div><p>Belum ada pengumuman</p></div>';
+      return;
+    }
+    var html = '';
+    res.data.forEach(function(p) {
+      html += '<div class="pengumuman-card ' + (p.pin?'pinned':'') + '">';
+      html += '<div class="flex-between"><h4>' + (p.pin?'📌 ':'') + p.judul + '</h4><span class="badge badge-biru">' + p.kategori + '</span></div>';
+      html += '<div class="pengumuman-isi mt-8">' + p.isi + '</div>';
+      if (p.file) html += '<a href="' + p.file + '" target="_blank" class="btn-akses" style="margin-top:10px;display:inline-block;background:var(--emas)">📎 Lihat Lampiran</a>';
+      html += '<div class="pengumuman-footer"><span>' + p.tanggal + '</span>';
+      if (isAdmin()) html += '<button class="btn-danger" onclick="hapusPengumuman(\'' + p.id + '\')">Hapus</button>';
+      html += '</div></div>';
+    });
+    document.getElementById('pengumuman-list').innerHTML = html;
+  }).getPengumuman();
+}
+function hapusPengumuman(id) {
+  if (!confirm('Hapus pengumuman ini?')) return;
+  google.script.run.withSuccessHandler(function(r) {
+    if (r.success) { showToast('Dihapus'); renderPengumuman(); }
+  }).deletePengumuman(id);
+}
+function openFormPengumuman() {
+  openModal('Buat Pengumuman',
+    '<div class="form-group"><label>JUDUL</label><input id="fp2-judul" placeholder="Judul pengumuman"></div>' +
+    '<div class="form-group"><label>KATEGORI</label><select id="fp2-kat"><option>Pengumuman</option><option>Agenda</option><option>Informasi</option><option>Dokumen</option></select></div>' +
+    '<div class="form-group"><label>ISI</label><textarea id="fp2-isi" placeholder="Isi pengumuman..." style="min-height:120px"></textarea></div>' +
+    '<div class="form-group"><label>LINK LAMPIRAN (opsional)</label><input id="fp2-file" placeholder="https://..."></div>' +
+    '<div class="form-group"><label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="fp2-pin"> PIN DI ATAS</label></div>' +
+    '<button class="btn-primary" onclick="submitPengumuman()">Kirim Pengumuman</button>'
+  );
+}
+function submitPengumuman() {
+  var data = {
+    judul: document.getElementById('fp2-judul').value,
+    kategori: document.getElementById('fp2-kat').value,
+    isi: document.getElementById('fp2-isi').value,
+    file: document.getElementById('fp2-file').value,
+    pin: document.getElementById('fp2-pin').checked,
+    dibuatOleh: currentUser.id
+  };
+  if (!data.judul || !data.isi) { showToast('Judul dan isi wajib diisi'); return; }
+  google.script.run.withSuccessHandler(function(r) {
+    if (r.success) { closeModal(); showToast('Pengumuman dikirim!'); renderPengumuman(); }
+    else showToast('Gagal: ' + r.message);
+  }).addPengumuman(data);
+}
+
+// Enter to login
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && !currentUser) doLoginUser();
+});
