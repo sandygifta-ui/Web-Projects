@@ -51,9 +51,17 @@
 
 ## 🖼️ Screenshot / Demo
 
-> *(Tambahkan screenshot atau GIF tampilan aplikasi di sini)*
+<div align="center">
 
-<br/>
+<img src="https://raw.githubusercontent.com/sandygifta-ui/Web-Projects/main/02-KOPRAMSEGA/documentation/Tampilan%20Login.png" width="45%" alt="Tampilan Login"/>
+<img src="https://raw.githubusercontent.com/sandygifta-ui/Web-Projects/main/02-KOPRAMSEGA/documentation/Tampilan%20Awal%20beranda.png" width="45%" alt="Tampilan Beranda"/>
+
+<img src="https://raw.githubusercontent.com/sandygifta-ui/Web-Projects/main/02-KOPRAMSEGA/documentation/Tampilan%20Halaman%20Latihan.png" width="45%" alt="Tampilan Halaman Latihan"/>
+<img src="https://raw.githubusercontent.com/sandygifta-ui/Web-Projects/main/02-KOPRAMSEGA/documentation/Tampilan%20Halaman%20Timer.png" width="45%" alt="Tampilan Halaman Timer"/>
+
+<img src="https://raw.githubusercontent.com/sandygifta-ui/Web-Projects/main/02-KOPRAMSEGA/documentation/Tampilan%20Halaman%20Pengumuman.png" width="45%" alt="Tampilan Halaman Pengumuman"/>
+
+</div>
 
 ## 🚀 Cara Menjalankan
 
