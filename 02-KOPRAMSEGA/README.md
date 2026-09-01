@@ -63,6 +63,18 @@
 
 </div>
 
+<br/>
+
+## 🎥 Demo Video
+
+<div align="center">
+
+[![Demo KOPRAMSEGA](https://img.youtube.com/vi/ysqQ7ZCZGSw/0.jpg)](https://youtu.be/ysqQ7ZCZGSw)
+
+</div>
+
+<br/>
+
 ## 🚀 Cara Menjalankan
 
 1. Buka [Google Apps Script Editor](https://script.google.com/home/projects/1uvwGn_ACqSCuTNKX4G8mCG_Jtde4Ahh5YMPX6te_p0v6ZJyNB7m-0aVr/edit) project ini
