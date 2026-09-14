@@ -1,0 +1,1157 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GeoPresensi — Rekap &amp; Laporan</title>
+  <style>
+    /* =====================================================
+       RESET & BASE
+    ===================================================== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 14px; }
+    body {
+      font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+      background: #F9FAFB; color: #111827;
+      display: flex; min-height: 100vh;
+    }
+
+    /* =====================================================
+       SIDEBAR
+    ===================================================== */
+    .sidebar {
+      width: 240px; min-height: 100vh; background: #2A1810;
+      display: flex; flex-direction: column;
+      position: fixed; top: 0; left: 0; z-index: 100; overflow-y: auto;
+    }
+    .sidebar-header { padding: 24px 20px 16px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .sidebar-logo { font-family: Georgia,"Times New Roman",serif; font-size: 1.3rem; font-weight: 700; color: #fff; }
+    .sidebar-logo span { color: #D97706; }
+    .sidebar-date { font-size: 0.75rem; color: #9CA3AF; margin-top: 4px; }
+    .sidebar-nav { padding: 16px 0; flex: 1; }
+    .nav-group-label {
+      font-size: 0.65rem; font-weight: 700; color: #6B7280;
+      letter-spacing: 1.2px; text-transform: uppercase; padding: 12px 20px 6px;
+    }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px; padding: 10px 20px;
+      cursor: pointer; color: #D1D5DB; font-size: 0.85rem;
+      transition: background 0.15s, color 0.15s;
+      text-decoration: none; border: none; background: none; width: 100%; text-align: left;
+    }
+    .nav-item:hover { background: rgba(255,255,255,0.07); color: #fff; }
+    .nav-item.active {
+      background: #D97706; color: #fff; font-weight: 700;
+      border-radius: 6px; margin: 0 10px; padding: 10px 10px; width: calc(100% - 20px);
+    }
+    .nav-icon { font-size: 1rem; width: 20px; text-align: center; flex-shrink: 0; }
+    .sidebar-footer {
+      padding: 16px 20px; border-top: 1px solid rgba(255,255,255,0.08);
+      font-size: 0.72rem; color: #9CA3AF;
+    }
+    .sidebar-footer strong { color: #D97706; font-size: 1rem; }
+
+    /* =====================================================
+       MAIN
+    ===================================================== */
+    .main { margin-left: 240px; flex: 1; padding: 28px 32px; min-height: 100vh; }
+
+    /* =====================================================
+       BADGES
+    ===================================================== */
+    .page-badges { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+    .badge { padding: 4px 14px; border-radius: 9999px; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.4px; }
+    .badge-blue  { background: #2563EB; color: #fff; }
+    .badge-green { background: #10B981; color: #fff; }
+    .badge-gray  { background: transparent; border: 1px solid #D1D5DB; color: #6B7280; }
+    .badge-purple{ background: #7C3AED; color: #fff; }
+
+    /* =====================================================
+       STAT CARDS
+    ===================================================== */
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px,1fr)); gap: 16px; margin-bottom: 28px; }
+    .stat-card {
+      background: #fff; border-radius: 10px; padding: 16px 18px;
+      border: 1px solid #E5E7EB; border-left: 4px solid #14B8A6;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    }
+    .stat-card.teal   { border-left-color: #14B8A6; }
+    .stat-card.purple { border-left-color: #7C3AED; }
+    .stat-card.red    { border-left-color: #DC2626; }
+    .stat-card.gold   { border-left-color: #D4A017; }
+    .stat-card.green  { border-left-color: #10B981; }
+    .stat-label { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; color: #6B7280; letter-spacing: 0.8px; }
+    .stat-value { font-size: 2rem; font-weight: 800; color: #111827; line-height: 1.2; margin: 4px 0 2px; }
+    .stat-unit  { font-size: 0.72rem; color: #9CA3AF; }
+
+    /* =====================================================
+       TABS
+    ===================================================== */
+    .tabs { display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 2px solid #E5E7EB; }
+    .tab-btn {
+      padding: 10px 20px; border: none; background: none; cursor: pointer;
+      font-size: 0.85rem; font-weight: 600; color: #6B7280;
+      border-bottom: 3px solid transparent; margin-bottom: -2px;
+      font-family: inherit; transition: color 0.15s, border-color 0.15s;
+    }
+    .tab-btn:hover { color: #111827; }
+    .tab-btn.active { color: #3B0764; border-bottom-color: #3B0764; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* =====================================================
+       SECTION HEADER
+    ===================================================== */
+    .section-header { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+    .section-icon {
+      width: 36px; height: 36px; background: #1E1B4B; color: #fff;
+      border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1rem;
+    }
+    .section-title { font-family: Georgia, serif; font-size: 1.15rem; font-weight: 700; color: #111827; }
+    .section-desc { font-size: 0.8rem; color: #6B7280; margin-bottom: 20px; margin-left: 46px; }
+
+    /* =====================================================
+       FORM CARD & FILTER CARD
+    ===================================================== */
+    .form-card {
+      background: #fff; border: 1px solid #E5E7EB; border-radius: 12px;
+      padding: 24px 28px; box-shadow: 0 1px 6px rgba(0,0,0,0.06); margin-bottom: 24px;
+    }
+    .filter-row { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-end; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 140px; }
+    .form-group.shrink { flex: 0 0 auto; }
+    .form-label { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; color: #6B7280; letter-spacing: 0.7px; }
+    .form-label .req { color: #DC2626; }
+    .form-control {
+      padding: 10px 14px; border: 1px solid #D1D5DB; border-radius: 8px;
+      font-size: 0.88rem; color: #111827; background: #fff;
+      transition: border-color 0.15s, box-shadow 0.15s; font-family: inherit;
+    }
+    .form-control:focus { outline: none; border-color: #7C3AED; box-shadow: 0 0 0 3px rgba(124,58,237,0.1); }
+    .form-control::placeholder { color: #9CA3AF; font-style: italic; }
+
+    /* =====================================================
+       BUTTONS
+    ===================================================== */
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px;
+      border-radius: 8px; font-size: 0.85rem; font-weight: 600; cursor: pointer;
+      transition: all 0.15s; border: none; font-family: inherit; white-space: nowrap;
+    }
+    .btn-primary   { background: #3B0764; color: #fff; }
+    .btn-primary:hover   { background: #1E1B4B; }
+    .btn-primary:disabled { background: #9CA3AF; cursor: not-allowed; }
+    .btn-secondary { background: transparent; color: #374151; border: 1.5px solid #D1D5DB; }
+    .btn-secondary:hover { background: #F3F4F6; }
+    .btn-success   { background: #10B981; color: #fff; }
+    .btn-success:hover { background: #059669; }
+    .btn-amber     { background: #D97706; color: #fff; }
+    .btn-amber:hover { background: #B45309; }
+    .btn-purple    { background: #7C3AED; color: #fff; }
+    .btn-purple:hover { background: #6D28D9; }
+    .btn-sm  { padding: 8px 16px; font-size: 0.8rem; }
+    .btn-xs  { padding: 5px 10px; font-size: 0.72rem; }
+    .btn-group { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
+
+    /* =====================================================
+       ALERT
+    ===================================================== */
+    .alert {
+      padding: 12px 16px; border-radius: 8px; font-size: 0.85rem;
+      margin-bottom: 16px; display: flex; align-items: flex-start; gap: 10px;
+    }
+    .alert-success { background: #F0FDF4; color: #166534; border: 1px solid #BBF7D0; }
+    .alert-error   { background: #FEF2F2; color: #991B1B; border: 1px solid #FECACA; }
+    .alert-warning { background: #FFFBEB; color: #92400E; border: 1px solid #FDE68A; }
+    .alert-info    { background: #EFF6FF; color: #1E40AF; border: 1px solid #BFDBFE; }
+    #alertBox      { display: none; }
+
+    /* =====================================================
+       TABLE CARD
+    ===================================================== */
+    .table-card {
+      background: #fff; border: 1px solid #E5E7EB; border-radius: 12px;
+      overflow: hidden; box-shadow: 0 1px 6px rgba(0,0,0,0.04); margin-bottom: 24px;
+    }
+    .table-card-header {
+      padding: 14px 20px; border-bottom: 1px solid #E5E7EB;
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+    }
+    .table-card-title { font-family: Georgia, serif; font-size: 0.95rem; font-weight: 700; }
+    .table-count { font-size: 0.75rem; color: #9CA3AF; }
+    .table-search {
+      padding: 7px 12px; border: 1px solid #D1D5DB; border-radius: 8px;
+      font-size: 0.82rem; width: 200px; font-family: inherit;
+    }
+    .table-search:focus { outline: none; border-color: #7C3AED; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    th {
+      background: #F9FAFB; padding: 10px 14px; text-align: left;
+      font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+      color: #6B7280; letter-spacing: 0.6px; border-bottom: 1px solid #E5E7EB;
+    }
+    td { padding: 10px 14px; border-bottom: 1px solid #F3F4F6; color: #374151; vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #F9FAFB; }
+    .table-empty { text-align: center; color: #9CA3AF; padding: 32px 14px; font-size: 0.85rem; }
+
+    /* Progress bar untuk persentase kehadiran */
+    .progress-wrap { display: flex; align-items: center; gap: 8px; }
+    .progress-bar-bg {
+      flex: 1; height: 6px; background: #E5E7EB; border-radius: 99px; overflow: hidden;
+    }
+    .progress-bar-fill { height: 100%; border-radius: 99px; background: #10B981; transition: width 0.4s; }
+    .progress-bar-fill.low    { background: #DC2626; }
+    .progress-bar-fill.medium { background: #D97706; }
+    .progress-pct { font-size: 0.75rem; font-weight: 700; color: #374151; min-width: 36px; }
+
+    /* =====================================================
+       CHIPS
+    ===================================================== */
+    .chip {
+      display: inline-block; padding: 2px 10px; border-radius: 9999px; font-size: 0.72rem; font-weight: 600;
+    }
+    .chip-green  { background: #D1FAE5; color: #065F46; }
+    .chip-red    { background: #FEE2E2; color: #991B1B; }
+    .chip-yellow { background: #FEF3C7; color: #92400E; }
+    .chip-blue   { background: #DBEAFE; color: #1E40AF; }
+    .chip-purple { background: #EDE9FE; color: #5B21B6; }
+    .chip-gray   { background: #F3F4F6; color: #6B7280; }
+
+    /* =====================================================
+       REKAP SUMMARY PANEL
+    ===================================================== */
+    #rekapSummary { display: none; }
+    .summary-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px,1fr)); gap: 12px; margin-bottom: 20px; }
+    .summary-card {
+      background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 10px;
+      padding: 14px 16px; text-align: center;
+    }
+    .summary-card .s-val { font-size: 1.8rem; font-weight: 800; line-height: 1; }
+    .summary-card .s-lbl { font-size: 0.68rem; color: #6B7280; text-transform: uppercase; letter-spacing: 0.6px; margin-top: 4px; }
+    .s-green { color: #10B981; }
+    .s-yellow{ color: #D97706; }
+    .s-red   { color: #DC2626; }
+    .s-navy  { color: #1E1B4B; }
+
+    /* =====================================================
+       SLIP PDF SECTION
+    ===================================================== */
+    .slip-card {
+      background: #fff; border: 1px solid #E5E7EB; border-radius: 12px;
+      padding: 24px 28px; box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+    }
+    .slip-info {
+      background: #F5F3FF; border: 1px solid #DDD6FE; border-radius: 8px;
+      padding: 12px 16px; font-size: 0.82rem; color: #5B21B6;
+      margin-bottom: 20px; display: flex; gap: 10px; align-items: flex-start;
+    }
+
+    /* =====================================================
+       LOG FILTERS
+    ===================================================== */
+    .log-filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+    .filter-chip {
+      padding: 5px 14px; border-radius: 9999px; font-size: 0.75rem; font-weight: 600;
+      cursor: pointer; border: 1.5px solid #D1D5DB; background: #fff; color: #6B7280;
+      transition: all 0.15s; font-family: inherit;
+    }
+    .filter-chip:hover { border-color: #7C3AED; color: #7C3AED; }
+    .filter-chip.active { background: #7C3AED; border-color: #7C3AED; color: #fff; }
+
+    /* =====================================================
+       LOADING OVERLAY
+    ===================================================== */
+    #loadingOverlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.4); z-index: 300;
+      align-items: center; justify-content: center;
+    }
+    #loadingOverlay.show { display: flex; }
+    .loading-box {
+      background: #fff; border-radius: 14px; padding: 32px 40px;
+      text-align: center; box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    }
+    .spinner-lg {
+      width: 48px; height: 48px; border: 5px solid #E5E7EB; border-top-color: #3B0764;
+      border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text { font-size: 0.95rem; color: #374151; font-weight: 600; }
+    .loading-sub  { font-size: 0.78rem; color: #9CA3AF; margin-top: 4px; }
+
+    /* =====================================================
+       RESPONSIVE
+    ===================================================== */
+    @media (max-width: 768px) {
+      .sidebar { width: 100%; min-height: auto; position: relative; flex-direction: row; overflow-x: auto; align-items: center; }
+      .sidebar-nav { display: flex; padding: 8px; flex-direction: row; flex: 1; }
+      .nav-group-label { display: none; }
+      .nav-item { padding: 8px 12px; white-space: nowrap; }
+      .nav-item.active { margin: 0 4px; width: auto; }
+      .sidebar-footer, .sidebar-date { display: none; }
+      .main { margin-left: 0; padding: 16px; }
+      .filter-row { flex-direction: column; }
+      .stat-grid  { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-logo">Geo<span>Presensi</span></div>
+    <div class="sidebar-date" id="sidebarDate"></div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-group-label">Transaksi Harian</div>
+    <button class="nav-item" onclick="navigateTo('Index')">
+      <span class="nav-icon">📋</span> Absen Masuk/Pulang
+    </button>
+    <div class="nav-group-label">Data Master</div>
+    <button class="nav-item" onclick="navigateTo('Karyawan')">
+      <span class="nav-icon">👤</span> Master Karyawan
+    </button>
+    <button class="nav-item" onclick="navigateTo('Pengaturan')">
+      <span class="nav-icon">⚙️</span> Pengaturan
+    </button>
+    <div class="nav-group-label">Laporan</div>
+    <button class="nav-item active" onclick="navigateTo('Rekap')">
+      <span class="nav-icon">📊</span> Rekap &amp; Laporan
+    </button>
+    <button class="nav-item" onclick="navigateTo('Log')">
+      <span class="nav-icon">🗒️</span> Log Aktivitas
+    </button>
+  </nav>
+  <div class="sidebar-footer">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+      <div style="width:32px;height:32px;background:#D97706;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.9rem;flex-shrink:0">👤</div>
+      <div style="overflow:hidden">
+        <div style="color:#fff;font-size:0.78rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="sidebarNamaUser">–</div>
+        <div style="color:#9CA3AF;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.5px" id="sidebarRoleUser">–</div>
+      </div>
+    </div>
+    <div style="color:#6B7280;font-size:0.7rem;margin-bottom:6px">Total Absensi: <strong id="totalAbsensiSidebar" style="color:#D97706">–</strong></div>
+    <button onclick="logout()" style="width:100%;padding:7px;background:rgba(220,38,38,0.15);border:1px solid rgba(220,38,38,0.3);border-radius:6px;color:#FCA5A5;font-size:0.75rem;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;transition:background 0.15s" onmouseover="this.style.background='rgba(220,38,38,0.25)'" onmouseout="this.style.background='rgba(220,38,38,0.15)'">
+      🚪 Keluar
+    </button>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- Badges -->
+  <div class="page-badges">
+    <span class="badge badge-blue">Laporan</span>
+    <span class="badge badge-purple">Rekap Bulanan</span>
+    <span class="badge badge-green">Slip PDF</span>
+    <span class="badge badge-gray">Log Aktivitas</span>
+  </div>
+
+  <!-- Stat Cards -->
+  <div class="stat-grid">
+    <div class="stat-card teal">
+      <div class="stat-label">Total Absensi</div>
+      <div class="stat-value" id="statTotalAbsensi">–</div>
+      <div class="stat-unit">entri semua waktu</div>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-label">Total Hadir</div>
+      <div class="stat-value" id="statTotalHadir">–</div>
+      <div class="stat-unit">catatan masuk</div>
+    </div>
+    <div class="stat-card gold">
+      <div class="stat-label">Total Telat</div>
+      <div class="stat-value" id="statTotalTelat">–</div>
+      <div class="stat-unit">keterlambatan</div>
+    </div>
+    <div class="stat-card red">
+      <div class="stat-label">Luar Radius</div>
+      <div class="stat-value" id="statLuarRadius">–</div>
+      <div class="stat-unit">absen lokasi asing</div>
+    </div>
+  </div>
+
+  <!-- Alert -->
+  <div id="alertBox" class="alert"></div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('tabRekap', this)">📊 Rekap Bulanan</button>
+    <button class="tab-btn" onclick="switchTab('tabSlip', this)">📄 Kirim Slip PDF</button>
+    <button class="tab-btn" onclick="switchTab('tabLog', this)">🗒️ Log Aktivitas</button>
+  </div>
+
+  <!-- =====================================================
+       TAB 1: REKAP BULANAN
+  ===================================================== -->
+  <div id="tabRekap" class="tab-content active">
+
+    <div class="section-header">
+      <div class="section-icon">📊</div>
+      <div class="section-title">Rekap Kehadiran Bulanan</div>
+    </div>
+    <div class="section-desc">
+      Pilih bulan dan tahun untuk menghitung rekap kehadiran semua karyawan. Hasil akan ditulis ke Sheet "Rekap" di Google Sheets.
+    </div>
+
+    <div class="form-card">
+      <div class="filter-row">
+        <div class="form-group">
+          <label class="form-label">Bulan <span class="req">*</span></label>
+          <select id="selectBulan" class="form-control">
+            <option value="1">Januari</option><option value="2">Februari</option>
+            <option value="3">Maret</option><option value="4">April</option>
+            <option value="5">Mei</option><option value="6">Juni</option>
+            <option value="7">Juli</option><option value="8">Agustus</option>
+            <option value="9">September</option><option value="10">Oktober</option>
+            <option value="11">November</option><option value="12">Desember</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tahun <span class="req">*</span></label>
+          <input type="number" id="inputTahunRekap" class="form-control"
+            min="2020" max="2099" placeholder="Contoh: 2025" />
+        </div>
+        <div class="form-group shrink">
+          <label class="form-label">&nbsp;</label>
+          <button class="btn btn-primary" onclick="generateRekap()">
+            📊 Generate Rekap
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Summary panel setelah rekap dibuat -->
+    <div id="rekapSummary">
+      <div class="summary-grid" id="summaryGrid"></div>
+
+      <div class="table-card">
+        <div class="table-card-header">
+          <span class="table-card-title">Hasil Rekap Kehadiran</span>
+          <span class="table-count" id="rekapPeriode">–</span>
+        </div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Nama Karyawan</th>
+                <th>Hadir</th>
+                <th>Telat</th>
+                <th>Alpha</th>
+                <th>Total Hari</th>
+                <th>% Kehadiran</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyRekap">
+              <tr><td colspan="7" class="table-empty">Belum ada data rekap. Generate terlebih dahulu.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="btn-group">
+        <button class="btn btn-success" onclick="bukaSheetRekap()">
+          📋 Lihat di Google Sheets
+        </button>
+        <button class="btn btn-secondary" onclick="resetRekap()">
+          ↩ Reset
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- =====================================================
+       TAB 2: KIRIM SLIP PDF
+  ===================================================== -->
+  <div id="tabSlip" class="tab-content">
+
+    <div class="section-header">
+      <div class="section-icon">📄</div>
+      <div class="section-title">Kirim Slip Kehadiran (PDF)</div>
+    </div>
+    <div class="section-desc">
+      Generate laporan kehadiran karyawan dalam format PDF dan kirim otomatis ke email karyawan.
+    </div>
+
+    <div class="slip-info">
+      📧 <span>Slip PDF akan dikirim ke email karyawan yang terdaftar di Sheet "Karyawan". Pastikan kolom email sudah diisi.</span>
+    </div>
+
+    <div class="slip-card">
+      <div class="filter-row">
+        <div class="form-group">
+          <label class="form-label">Karyawan <span class="req">*</span></label>
+          <select id="selectKaryawanSlip" class="form-control">
+            <option value="">— Memuat daftar karyawan... —</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Bulan <span class="req">*</span></label>
+          <select id="selectBulanSlip" class="form-control">
+            <option value="1">Januari</option><option value="2">Februari</option>
+            <option value="3">Maret</option><option value="4">April</option>
+            <option value="5">Mei</option><option value="6">Juni</option>
+            <option value="7">Juli</option><option value="8">Agustus</option>
+            <option value="9">September</option><option value="10">Oktober</option>
+            <option value="11">November</option><option value="12">Desember</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tahun <span class="req">*</span></label>
+          <input type="number" id="inputTahunSlip" class="form-control"
+            min="2020" max="2099" placeholder="2025" />
+        </div>
+      </div>
+
+      <!-- Info karyawan terpilih -->
+      <div id="infoKaryawanSlip" style="display:none;margin-top:16px">
+        <div style="background:#F0FDF4;border:1px solid #BBF7D0;border-radius:8px;padding:12px 16px;font-size:0.82rem;color:#166534">
+          👤 <strong id="namaKaryawanSlip"></strong> — 
+          <span id="jabatanKaryawanSlip"></span> — 
+          📧 <span id="emailKaryawanSlip"></span>
+        </div>
+      </div>
+
+      <div class="btn-group">
+        <button class="btn btn-purple" onclick="kirimSlipPDF()">
+          📨 Kirim Slip PDF ke Email
+        </button>
+        <button class="btn btn-secondary" onclick="kirimSlipSemuaKaryawan()">
+          📬 Kirim ke Semua Karyawan
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- =====================================================
+       TAB 3: LOG AKTIVITAS
+  ===================================================== -->
+  <div id="tabLog" class="tab-content">
+
+    <div class="section-header">
+      <div class="section-icon">🗒️</div>
+      <div class="section-title">Log Aktivitas Absensi</div>
+    </div>
+    <div class="section-desc">
+      Seluruh riwayat absensi karyawan. Gunakan filter untuk mempersempit pencarian.
+    </div>
+
+    <!-- Filter chips -->
+    <div class="log-filters">
+      <button class="filter-chip active" onclick="filterLog('semua', this)">Semua</button>
+      <button class="filter-chip" onclick="filterLog('masuk', this)">Masuk</button>
+      <button class="filter-chip" onclick="filterLog('pulang', this)">Pulang</button>
+      <button class="filter-chip" onclick="filterLog('telat', this)">Telat</button>
+      <button class="filter-chip" onclick="filterLog('luar', this)">Luar Radius</button>
+    </div>
+
+    <!-- Filter baris (nama + tanggal) -->
+    <div class="form-card" style="padding:16px 20px;margin-bottom:16px">
+      <div class="filter-row" style="gap:12px">
+        <div class="form-group">
+          <label class="form-label">Cari Nama</label>
+          <input type="text" id="searchLogNama" class="form-control" placeholder="Nama karyawan..."
+            oninput="terapkanFilterLog()" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Dari Tanggal</label>
+          <input type="date" id="filterTanggalDari" class="form-control" onchange="terapkanFilterLog()" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Sampai Tanggal</label>
+          <input type="date" id="filterTanggalSampai" class="form-control" onchange="terapkanFilterLog()" />
+        </div>
+        <div class="form-group shrink">
+          <label class="form-label">&nbsp;</label>
+          <button class="btn btn-secondary btn-sm" onclick="resetFilterLog()">↺ Reset Filter</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="table-card">
+      <div class="table-card-header">
+        <span class="table-card-title">Riwayat Absensi</span>
+        <div style="display:flex;gap:10px;align-items:center">
+          <span class="table-count" id="logCount">– entri</span>
+          <button class="btn btn-secondary btn-xs" onclick="muatLog()">🔄 Refresh</button>
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Waktu</th>
+              <th>ID</th>
+              <th>Nama</th>
+              <th>Jenis</th>
+              <th>Status Lokasi</th>
+              <th>Jarak (m)</th>
+              <th>Status Hadir</th>
+              <th>Foto</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyLog">
+            <tr><td colspan="9" class="table-empty">Klik tab "Log Aktivitas" untuk memuat data...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <!-- Pagination -->
+      <div id="paginasiLog" style="padding:14px 20px;display:flex;gap:8px;align-items:center;border-top:1px solid #F3F4F6;flex-wrap:wrap">
+        <button class="btn btn-secondary btn-xs" id="btnPrevPage" onclick="gantiHalaman(-1)" disabled>◀ Prev</button>
+        <span id="pageInfo" style="font-size:0.78rem;color:#6B7280">Hal 1 dari 1</span>
+        <button class="btn btn-secondary btn-xs" id="btnNextPage" onclick="gantiHalaman(1)" disabled>Next ▶</button>
+        <span style="margin-left:auto;font-size:0.75rem;color:#9CA3AF" id="logCountDetail"></span>
+      </div>
+    </div>
+
+  </div>
+
+</main>
+
+<!-- Loading Overlay -->
+<div id="loadingOverlay">
+  <div class="loading-box">
+    <div class="spinner-lg"></div>
+    <div class="loading-text" id="loadingText">Memproses data...</div>
+    <div class="loading-sub" id="loadingSub">Harap tunggu...</div>
+  </div>
+</div>
+
+<script>
+  // ============================================================
+  // STATE
+  // ============================================================
+  var semuaLog      = [];
+  var logTerfilter  = [];
+  var filterAktif   = "semua";
+  var halamanAktif  = 1;
+  var perHalaman    = 20;
+  var daftarKaryawan= [];
+
+  // ---- SESI GLOBAL (tanpa localStorage) ----
+  var SESI = (function() {
+    function getParam(name) {
+      var match = new RegExp("[?&]" + name + "=([^&#]*)").exec(window.location.search || "");
+      return match ? decodeURIComponent(match[1].replace(/\+/g, " ")) : null;
+    }
+    return {
+      token : getParam("token") || "",
+      role  : getParam("role")  || "admin",
+      nama  : getParam("nama")  || "Admin"
+    };
+  })();
+
+  // INIT
+  window.onload = function() {
+    if (!SESI.token) {
+      window.open(window.location.href.split("?")[0] + "?page=Login", "_top");
+      return;
+    }
+    document.getElementById("sidebarNamaUser").textContent = SESI.nama;
+    document.getElementById("sidebarRoleUser").textContent = SESI.role;
+    updateSidebarDate();
+    setDefaultBulanTahun();
+    muatDaftarKaryawan();
+  };
+
+  function getBaseUrl() {
+    var href = window.location.href;
+    var execIdx = href.indexOf("/exec");
+    return execIdx !== -1 ? href.substring(0, execIdx + 5) : href.split("?")[0];
+  }
+
+  function getSesiLokal() { return SESI; }
+  function hapusSesiLokal() { SESI.token = ""; }
+
+  function logout() {
+    if (SESI.token) google.script.run.logoutUser(SESI.token);
+    window.open(getBaseUrl() + "?page=Login", "_top");
+  }
+
+  function navigateTo(page) {
+    var base = getBaseUrl();
+    var url;
+    if (page === "Login") {
+      url = base + "?page=Login";
+    } else {
+      url = base + "?page=" + page
+        + "&token=" + encodeURIComponent(SESI.token)
+        + "&role="  + encodeURIComponent(SESI.role)
+        + "&nama="  + encodeURIComponent(SESI.nama);
+    }
+    window.open(url, "_top");
+  }
+
+  function updateSidebarDate() {
+    var opt = { weekday: "long", year: "numeric", month: "long", day: "numeric" };
+    document.getElementById("sidebarDate").textContent =
+      new Date().toLocaleDateString("id-ID", opt);
+  }
+
+  function setDefaultBulanTahun() {
+    var now = new Date();
+    var bulan = now.getMonth() + 1;
+    var tahun = now.getFullYear();
+
+    document.getElementById("selectBulan").value    = bulan;
+    document.getElementById("selectBulanSlip").value= bulan;
+    document.getElementById("inputTahunRekap").value = tahun;
+    document.getElementById("inputTahunSlip").value  = tahun;
+  }
+
+  // ============================================================
+  // TABS
+  // ============================================================
+  function switchTab(tabId, btnEl) {
+    document.querySelectorAll(".tab-content").forEach(function(el) { el.classList.remove("active"); });
+    document.querySelectorAll(".tab-btn").forEach(function(el)     { el.classList.remove("active"); });
+    document.getElementById(tabId).classList.add("active");
+    btnEl.classList.add("active");
+
+    // Lazy load log saat tab dibuka
+    if (tabId === "tabLog" && semuaLog.length === 0) {
+      muatLog();
+    }
+  }
+
+  // ============================================================
+  // MUAT KARYAWAN (untuk dropdown Slip)
+  // ============================================================
+  function muatDaftarKaryawan() {
+    google.script.run
+      .withSuccessHandler(function(list) {
+        daftarKaryawan = list;
+        var sel = document.getElementById("selectKaryawanSlip");
+        sel.innerHTML = '<option value="">— Pilih Karyawan —</option>';
+        list.forEach(function(k) {
+          var opt = document.createElement("option");
+          opt.value = k.id;
+          opt.textContent = k.nama + " (" + k.jabatan + ")";
+          opt.dataset.nama    = k.nama;
+          opt.dataset.jabatan = k.jabatan;
+          opt.dataset.email   = k.email;
+          sel.appendChild(opt);
+        });
+      })
+      .withFailureHandler(function() {})
+      .getKaryawanList();
+  }
+
+  // Update info karyawan saat dipilih di dropdown slip
+  document.getElementById("selectKaryawanSlip").addEventListener("change", function() {
+    var opt = this.options[this.selectedIndex];
+    var info = document.getElementById("infoKaryawanSlip");
+    if (this.value && opt.dataset.nama) {
+      document.getElementById("namaKaryawanSlip").textContent    = opt.dataset.nama;
+      document.getElementById("jabatanKaryawanSlip").textContent = opt.dataset.jabatan || "–";
+      document.getElementById("emailKaryawanSlip").textContent   = opt.dataset.email || "Email tidak ada";
+      info.style.display = "block";
+    } else {
+      info.style.display = "none";
+    }
+  });
+
+  // ============================================================
+  // REKAP BULANAN
+  // ============================================================
+  function generateRekap() {
+    var bulan = document.getElementById("selectBulan").value;
+    var tahun = document.getElementById("inputTahunRekap").value.trim();
+
+    if (!tahun || isNaN(tahun) || tahun < 2020 || tahun > 2099) {
+      tampilAlert("Masukkan tahun yang valid (2020–2099).", "warning");
+      return;
+    }
+
+    tampilLoading("Menghitung rekap kehadiran...", "Memproses data absensi dari Google Sheets...");
+
+    google.script.run
+      .withSuccessHandler(function(result) {
+        sembunyikanLoading();
+        if (result.sukses) {
+          tampilAlert(result.pesan, "success");
+          // Muat ulang log untuk mendapatkan data terbaru lalu render rekap
+          muatLogUntukRekap(bulan, tahun);
+        } else {
+          tampilAlert(result.pesan, "error");
+        }
+      })
+      .withFailureHandler(function(err) {
+        sembunyikanLoading();
+        tampilAlert("Gagal generate rekap: " + err.message, "error");
+      })
+      .generateRekapBulanan(bulan, tahun);
+  }
+
+  function muatLogUntukRekap(bulan, tahun) {
+    google.script.run
+      .withSuccessHandler(function(logData) {
+        // Filter data sesuai bulan & tahun yang dipilih
+        var namaBulan = ["","Januari","Februari","Maret","April","Mei","Juni",
+                         "Juli","Agustus","September","Oktober","November","Desember"];
+        var filtered = logData.filter(function(row) {
+          // row.timestamp format: dd/MM/yyyy HH:mm
+          if (!row.timestamp) return false;
+          var parts = row.timestamp.split(" ")[0].split("/");
+          if (parts.length < 3) return false;
+          return parseInt(parts[1]) === parseInt(bulan) && parseInt(parts[2]) === parseInt(tahun);
+        });
+
+        // Hitung rekap per karyawan (hanya absen Masuk)
+        var rekap = {};
+        filtered.forEach(function(row) {
+          if (row.jenisAbsen !== "Masuk") return;
+          var id = row.idKaryawan;
+          if (!rekap[id]) rekap[id] = { id: id, nama: row.namaKaryawan, hadir: 0, telat: 0, alpha: 0 };
+          if (row.statusKehadiran === "Hadir")      rekap[id].hadir++;
+          else if (row.statusKehadiran === "Telat") rekap[id].telat++;
+          else if (row.statusKehadiran === "Alpha") rekap[id].alpha++;
+        });
+
+        var rows = Object.values(rekap);
+        renderRekapTable(rows, namaBulan[parseInt(bulan)] + " " + tahun);
+        renderSummaryGrid(rows);
+        document.getElementById("rekapSummary").style.display = "block";
+        document.getElementById("rekapPeriode").textContent = namaBulan[parseInt(bulan)] + " " + tahun;
+      })
+      .withFailureHandler(function() {
+        // Jika gagal muat log, tetap tampilkan summary kosong
+        document.getElementById("rekapSummary").style.display = "block";
+      })
+      .getAllAbsensi();
+  }
+
+  function renderSummaryGrid(rows) {
+    var totalHadir = rows.reduce(function(s,r) { return s+r.hadir; }, 0);
+    var totalTelat = rows.reduce(function(s,r) { return s+r.telat; }, 0);
+    var totalAlpha = rows.reduce(function(s,r) { return s+r.alpha; }, 0);
+    var totalKary  = rows.length;
+
+    document.getElementById("summaryGrid").innerHTML =
+      '<div class="summary-card"><div class="s-val s-navy">' + totalKary  + '</div><div class="s-lbl">Karyawan</div></div>' +
+      '<div class="summary-card"><div class="s-val s-green">'+ totalHadir + '</div><div class="s-lbl">Total Hadir</div></div>' +
+      '<div class="summary-card"><div class="s-val s-yellow">'+ totalTelat + '</div><div class="s-lbl">Total Telat</div></div>' +
+      '<div class="summary-card"><div class="s-val s-red">'  + totalAlpha + '</div><div class="s-lbl">Total Alpha</div></div>';
+  }
+
+  function renderRekapTable(rows, periode) {
+    var tbody = document.getElementById("tbodyRekap");
+    if (!rows || rows.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" class="table-empty">Tidak ada data absensi untuk periode ' + periode + '.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = rows.map(function(r) {
+      var total = r.hadir + r.telat + r.alpha;
+      var pct   = total > 0 ? (r.hadir / total * 100) : 0;
+      var fillClass = pct >= 80 ? "" : (pct >= 60 ? "medium" : "low");
+      var progressHTML =
+        '<div class="progress-wrap">' +
+        '<div class="progress-bar-bg"><div class="progress-bar-fill ' + fillClass + '" style="width:' + pct.toFixed(0) + '%"></div></div>' +
+        '<span class="progress-pct">' + pct.toFixed(0) + '%</span>' +
+        '</div>';
+
+      var hadirChip = '<span class="chip chip-green">'  + r.hadir + '</span>';
+      var telatChip = r.telat > 0 ? '<span class="chip chip-yellow">' + r.telat + '</span>' : '<span class="chip chip-gray">0</span>';
+      var alphaChip = r.alpha > 0 ? '<span class="chip chip-red">'    + r.alpha + '</span>' : '<span class="chip chip-gray">0</span>';
+
+      return '<tr>'
+        + '<td><code style="background:#F3F4F6;padding:2px 8px;border-radius:4px;font-size:0.75rem">' + r.id + '</code></td>'
+        + '<td><strong>' + r.nama + '</strong></td>'
+        + '<td>' + hadirChip + '</td>'
+        + '<td>' + telatChip + '</td>'
+        + '<td>' + alphaChip + '</td>'
+        + '<td><strong>' + total + '</strong> hari</td>'
+        + '<td>' + progressHTML + '</td>'
+        + '</tr>';
+    }).join("");
+  }
+
+  function resetRekap() {
+    document.getElementById("rekapSummary").style.display = "none";
+    document.getElementById("tbodyRekap").innerHTML =
+      '<tr><td colspan="7" class="table-empty">Belum ada data rekap. Generate terlebih dahulu.</td></tr>';
+  }
+
+  function bukaSheetRekap() {
+    // Buka Google Sheets di tab baru — user harus tahu URL Spreadsheet-nya
+    tampilAlert("Buka Google Sheets Anda dan lihat sheet 'Rekap' yang sudah diperbarui.", "info");
+  }
+
+  // ============================================================
+  // KIRIM SLIP PDF
+  // ============================================================
+  function kirimSlipPDF() {
+    var idKaryawan = document.getElementById("selectKaryawanSlip").value;
+    var bulan      = document.getElementById("selectBulanSlip").value;
+    var tahun      = document.getElementById("inputTahunSlip").value.trim();
+
+    if (!idKaryawan) { tampilAlert("Pilih karyawan terlebih dahulu.", "warning"); return; }
+    if (!tahun || isNaN(tahun)) { tampilAlert("Masukkan tahun yang valid.", "warning"); return; }
+
+    // Cek email karyawan
+    var opt = document.getElementById("selectKaryawanSlip").options[
+      document.getElementById("selectKaryawanSlip").selectedIndex
+    ];
+    if (!opt.dataset.email) {
+      tampilAlert("Karyawan ini tidak memiliki email. Tambahkan email di Master Karyawan.", "error");
+      return;
+    }
+
+    tampilLoading("Membuat slip PDF...", "Menggenerate dokumen dan mengirim email...");
+
+    google.script.run
+      .withSuccessHandler(function(result) {
+        sembunyikanLoading();
+        if (result.sukses) {
+          tampilAlert("✅ " + result.pesan, "success");
+        } else {
+          tampilAlert(result.pesan, "error");
+        }
+      })
+      .withFailureHandler(function(err) {
+        sembunyikanLoading();
+        tampilAlert("Gagal mengirim slip: " + err.message, "error");
+      })
+      .kirimSlipPDF(idKaryawan, bulan, tahun);
+  }
+
+  function kirimSlipSemuaKaryawan() {
+    var bulan = document.getElementById("selectBulanSlip").value;
+    var tahun = document.getElementById("inputTahunSlip").value.trim();
+    if (!tahun || isNaN(tahun)) { tampilAlert("Masukkan tahun yang valid.", "warning"); return; }
+
+    if (!daftarKaryawan.length) { tampilAlert("Belum ada data karyawan.", "warning"); return; }
+
+    var karyawanDenganEmail = daftarKaryawan.filter(function(k) { return k.email; });
+    if (!karyawanDenganEmail.length) {
+      tampilAlert("Tidak ada karyawan yang memiliki email terdaftar.", "error");
+      return;
+    }
+
+    if (!confirm("Kirim slip PDF ke " + karyawanDenganEmail.length + " karyawan yang punya email? Proses ini mungkin memakan waktu.")) return;
+
+    tampilLoading("Mengirim slip ke semua karyawan...", "Harap tunggu, proses ini membutuhkan waktu...");
+
+    // Kirim satu per satu secara rekursif agar tidak timeout
+    var idx    = 0;
+    var sukses = 0;
+    var gagal  = 0;
+
+    function kirimBerikutnya() {
+      if (idx >= karyawanDenganEmail.length) {
+        sembunyikanLoading();
+        tampilAlert("Selesai! " + sukses + " slip terkirim, " + gagal + " gagal.", sukses > 0 ? "success" : "error");
+        return;
+      }
+      var k = karyawanDenganEmail[idx];
+      document.getElementById("loadingText").textContent =
+        "Mengirim ke " + k.nama + " (" + (idx + 1) + "/" + karyawanDenganEmail.length + ")...";
+      idx++;
+
+      google.script.run
+        .withSuccessHandler(function(result) {
+          if (result.sukses) sukses++; else gagal++;
+          kirimBerikutnya();
+        })
+        .withFailureHandler(function() {
+          gagal++;
+          kirimBerikutnya();
+        })
+        .kirimSlipPDF(k.id, bulan, tahun);
+    }
+
+    kirimBerikutnya();
+  }
+
+  // ============================================================
+  // LOG AKTIVITAS
+  // ============================================================
+  function muatLog() {
+    document.getElementById("tbodyLog").innerHTML =
+      '<tr><td colspan="9" class="table-empty">⏳ Memuat data log absensi...</td></tr>';
+
+    google.script.run
+      .withSuccessHandler(function(data) {
+        semuaLog = data;
+
+        // Update stat cards dari log
+        hitungStatKeseluruhan(data);
+
+        // Default: terapkan filter dan render
+        terapkanFilterLog();
+        document.getElementById("totalAbsensiSidebar").textContent = data.length;
+      })
+      .withFailureHandler(function(err) {
+        document.getElementById("tbodyLog").innerHTML =
+          '<tr><td colspan="9" class="table-empty">Gagal memuat log: ' + err.message + '</td></tr>';
+      })
+      .getAllAbsensi();
+  }
+
+  function hitungStatKeseluruhan(data) {
+    var totalHadir = 0, totalTelat = 0, luarRadius = 0;
+    data.forEach(function(row) {
+      if (row.jenisAbsen === "Masuk") {
+        if (row.statusKehadiran === "Hadir")      totalHadir++;
+        else if (row.statusKehadiran === "Telat") totalTelat++;
+      }
+      if (row.statusLokasi === "Luar Radius") luarRadius++;
+    });
+    document.getElementById("statTotalAbsensi").textContent = data.length;
+    document.getElementById("statTotalHadir").textContent   = totalHadir;
+    document.getElementById("statTotalTelat").textContent   = totalTelat;
+    document.getElementById("statLuarRadius").textContent   = luarRadius;
+  }
+
+  // Filter chips klik
+  function filterLog(tipe, btnEl) {
+    filterAktif = tipe;
+    document.querySelectorAll(".filter-chip").forEach(function(el) { el.classList.remove("active"); });
+    btnEl.classList.add("active");
+    halamanAktif = 1;
+    terapkanFilterLog();
+  }
+
+  function terapkanFilterLog() {
+    var q       = (document.getElementById("searchLogNama").value || "").toLowerCase();
+    var dari    = document.getElementById("filterTanggalDari").value;
+    var sampai  = document.getElementById("filterTanggalSampai").value;
+
+    logTerfilter = semuaLog.filter(function(row) {
+      // Filter chip
+      if (filterAktif === "masuk"  && row.jenisAbsen !== "Masuk")          return false;
+      if (filterAktif === "pulang" && row.jenisAbsen !== "Pulang")          return false;
+      if (filterAktif === "telat"  && row.statusKehadiran !== "Telat")      return false;
+      if (filterAktif === "luar"   && row.statusLokasi !== "Luar Radius")   return false;
+
+      // Filter nama
+      if (q && !row.namaKaryawan.toLowerCase().includes(q)) return false;
+
+      // Filter tanggal
+      if (dari || sampai) {
+        // row.timestamp = "dd/MM/yyyy HH:mm"
+        var parts = row.timestamp.split(" ")[0].split("/");
+        if (parts.length === 3) {
+          var tglRow = parts[2] + "-" + parts[1] + "-" + parts[0]; // yyyy-MM-dd
+          if (dari   && tglRow < dari)   return false;
+          if (sampai && tglRow > sampai) return false;
+        }
+      }
+
+      return true;
+    });
+
+    renderLogTable();
+    updatePaginasi();
+  }
+
+  function renderLogTable() {
+    var tbody   = document.getElementById("tbodyLog");
+    var start   = (halamanAktif - 1) * perHalaman;
+    var end     = start + perHalaman;
+    var halaman = logTerfilter.slice(start, end);
+
+    document.getElementById("logCount").textContent = logTerfilter.length + " entri";
+    document.getElementById("logCountDetail").textContent =
+      "Menampilkan " + (start + 1) + "–" + Math.min(end, logTerfilter.length) +
+      " dari " + logTerfilter.length;
+
+    if (!halaman.length) {
+      tbody.innerHTML = '<tr><td colspan="9" class="table-empty">Tidak ada data yang cocok dengan filter.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = halaman.map(function(row, i) {
+      var no   = start + i + 1;
+      var chipJenis = row.jenisAbsen === "Masuk"
+        ? '<span class="chip chip-green">Masuk</span>'
+        : '<span class="chip chip-blue">Pulang</span>';
+      var chipLokasi = row.statusLokasi === "Dalam Radius"
+        ? '<span class="chip chip-green">Dalam Radius</span>'
+        : '<span class="chip chip-red">Luar Radius</span>';
+      var chipHadir = row.statusKehadiran === "Hadir"
+        ? '<span class="chip chip-green">Hadir</span>'
+        : row.statusKehadiran === "Telat"
+          ? '<span class="chip chip-yellow">Telat</span>'
+          : '<span class="chip chip-red">Alpha</span>';
+      var fotoLink = row.linkFoto
+        ? '<a href="' + row.linkFoto + '" target="_blank" class="btn btn-secondary btn-xs">📷 Lihat</a>'
+        : '<span style="color:#9CA3AF">—</span>';
+
+      return '<tr>'
+        + '<td style="color:#9CA3AF">' + no + '</td>'
+        + '<td style="white-space:nowrap">' + row.timestamp + '</td>'
+        + '<td><code style="background:#F3F4F6;padding:2px 6px;border-radius:4px;font-size:0.72rem">' + row.idKaryawan + '</code></td>'
+        + '<td><strong>' + row.namaKaryawan + '</strong></td>'
+        + '<td>' + chipJenis + '</td>'
+        + '<td>' + chipLokasi + '</td>'
+        + '<td>' + (row.jarak || "–") + '</td>'
+        + '<td>' + chipHadir + '</td>'
+        + '<td>' + fotoLink + '</td>'
+        + '</tr>';
+    }).join("");
+  }
+
+  function updatePaginasi() {
+    var totalHalaman = Math.max(1, Math.ceil(logTerfilter.length / perHalaman));
+    document.getElementById("pageInfo").textContent = "Hal " + halamanAktif + " dari " + totalHalaman;
+    document.getElementById("btnPrevPage").disabled = halamanAktif <= 1;
+    document.getElementById("btnNextPage").disabled = halamanAktif >= totalHalaman;
+  }
+
+  function gantiHalaman(arah) {
+    var totalHalaman = Math.ceil(logTerfilter.length / perHalaman);
+    halamanAktif = Math.max(1, Math.min(totalHalaman, halamanAktif + arah));
+    renderLogTable();
+    updatePaginasi();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function resetFilterLog() {
+    document.getElementById("searchLogNama").value      = "";
+    document.getElementById("filterTanggalDari").value  = "";
+    document.getElementById("filterTanggalSampai").value= "";
+    filterAktif = "semua";
+    document.querySelectorAll(".filter-chip").forEach(function(el, i) {
+      el.classList.toggle("active", i === 0);
+    });
+    halamanAktif = 1;
+    terapkanFilterLog();
+  }
+
+  // ============================================================
+  // HELPERS
+  // ============================================================
+  function tampilLoading(teks, sub) {
+    document.getElementById("loadingText").textContent = teks || "Memproses...";
+    document.getElementById("loadingSub").textContent  = sub  || "Harap tunggu...";
+    document.getElementById("loadingOverlay").classList.add("show");
+  }
+
+  function sembunyikanLoading() {
+    document.getElementById("loadingOverlay").classList.remove("show");
+  }
+
+  function tampilAlert(pesan, tipe) {
+    var box   = document.getElementById("alertBox");
+    var icons = { success: "✅", error: "❌", warning: "⚠️", info: "ℹ️" };
+    box.className     = "alert alert-" + tipe;
+    box.innerHTML     = (icons[tipe] || "ℹ️") + " <span>" + pesan + "</span>";
+    box.style.display = "flex";
+    if (tipe === "success" || tipe === "info") {
+      setTimeout(function() { box.style.display = "none"; }, 6000);
+    }
+    box.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+</script>
+
+</body>
+</html>

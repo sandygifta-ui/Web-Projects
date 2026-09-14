@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GeoPresensi — Login</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; font-family: -apple-system, "Segoe UI", Roboto, sans-serif; background: #F9FAFB; color: #111827; }
+    .login-wrapper { display: flex; min-height: 100vh; }
+    .login-brand {
+      width: 400px; background: #2A1810; display: flex; flex-direction: column;
+      justify-content: center; align-items: flex-start; padding: 60px 48px;
+      position: relative; overflow: hidden; flex-shrink: 0;
+    }
+    .login-brand::before {
+      content: ""; position: absolute; width: 300px; height: 300px; border-radius: 50%;
+      border: 44px solid rgba(217,119,6,0.15); top: -70px; right: -70px;
+    }
+    .brand-logo { font-family: Georgia,serif; font-size: 2rem; font-weight: 700; color: #fff; margin-bottom: 10px; position: relative; z-index: 1; }
+    .brand-logo span { color: #D97706; }
+    .brand-tagline { font-size: 0.9rem; color: #D1D5DB; line-height: 1.6; position: relative; z-index: 1; margin-bottom: 36px; }
+    .brand-features { list-style: none; display: flex; flex-direction: column; gap: 12px; position: relative; z-index: 1; }
+    .brand-features li { display: flex; align-items: center; gap: 10px; font-size: 0.82rem; color: #9CA3AF; }
+    .feat-icon { width: 30px; height: 30px; background: rgba(217,119,6,0.2); border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; flex-shrink: 0; }
+    .login-panel { flex: 1; display: flex; align-items: center; justify-content: center; padding: 40px 24px; }
+    .login-box { width: 100%; max-width: 400px; }
+    .login-header { margin-bottom: 28px; }
+    .login-header h1 { font-family: Georgia,serif; font-size: 1.5rem; font-weight: 700; margin-bottom: 6px; }
+    .login-header p { font-size: 0.84rem; color: #6B7280; }
+    .role-group { display: flex; gap: 10px; margin-bottom: 22px; }
+    .role-btn { flex: 1; padding: 11px; border-radius: 10px; border: 2px solid #E5E7EB; background: #fff; cursor: pointer; text-align: center; transition: all 0.15s; font-family: inherit; }
+    .role-btn .role-icon { font-size: 1.3rem; display: block; margin-bottom: 4px; }
+    .role-btn .role-label { font-size: 0.75rem; font-weight: 600; color: #6B7280; }
+    .role-btn.active-admin { border-color: #3B0764; background: #F5F3FF; }
+    .role-btn.active-admin .role-label { color: #3B0764; }
+    .role-btn.active-karyawan { border-color: #D97706; background: #FFFBEB; }
+    .role-btn.active-karyawan .role-label { color: #D97706; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+    .form-label { font-size: 0.67rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.7px; color: #6B7280; }
+    .input-wrap { position: relative; }
+    .input-icon { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); font-size: 1rem; pointer-events: none; opacity: 0.45; }
+    .form-control { width: 100%; padding: 11px 14px 11px 38px; border: 1.5px solid #D1D5DB; border-radius: 8px; font-size: 0.88rem; color: #111827; background: #fff; transition: border-color 0.15s, box-shadow 0.15s; font-family: inherit; }
+    .form-control:focus { outline: none; border-color: #7C3AED; box-shadow: 0 0 0 3px rgba(124,58,237,0.1); }
+    .form-control.error { border-color: #DC2626; }
+    .form-control::placeholder { color: #9CA3AF; font-style: italic; }
+    .toggle-pw { position: absolute; right: 13px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 1rem; opacity: 0.4; transition: opacity 0.15s; padding: 0; }
+    .toggle-pw:hover { opacity: 0.8; }
+    .remember-row { display: flex; align-items: center; margin-bottom: 20px; }
+    .checkbox-label { display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: #374151; cursor: pointer; }
+    .checkbox-label input { width: 14px; height: 14px; accent-color: #3B0764; cursor: pointer; }
+    .btn-login { width: 100%; padding: 12px; background: #3B0764; color: #fff; border: none; border-radius: 8px; font-size: 0.9rem; font-weight: 700; cursor: pointer; font-family: inherit; transition: background 0.15s; display: flex; align-items: center; justify-content: center; gap: 10px; }
+    .btn-login:hover { background: #1E1B4B; }
+    .btn-login:disabled { background: #9CA3AF; cursor: not-allowed; }
+    .btn-login.role-karyawan { background: #D97706; }
+    .btn-login.role-karyawan:hover { background: #B45309; }
+    #alertBox { display: none; padding: 12px 16px; border-radius: 8px; font-size: 0.84rem; margin-bottom: 18px; align-items: flex-start; gap: 10px; }
+    .alert-error   { background: #FEF2F2; color: #991B1B; border: 1px solid #FECACA; }
+    .alert-success { background: #F0FDF4; color: #166534; border: 1px solid #BBF7D0; }
+    .spinner { width: 17px; height: 17px; border: 3px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; display: none; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @media (max-width: 768px) { .login-brand { display: none; } }
+  </style>
+</head>
+<body>
+<div class="login-wrapper">
+
+  <div class="login-brand">
+    <div class="brand-logo">Geo<span>Presensi</span></div>
+    <p class="brand-tagline">Sistem absensi karyawan berbasis<br>foto selfie &amp; GPS. Gratis selamanya.</p>
+    <ul class="brand-features">
+      <li><div class="feat-icon">📷</div><span>Foto selfie dari browser</span></li>
+      <li><div class="feat-icon">📍</div><span>Validasi lokasi GPS otomatis</span></li>
+      <li><div class="feat-icon">📊</div><span>Rekap &amp; laporan bulanan PDF</span></li>
+      <li><div class="feat-icon">☁️</div><span>100% Google Drive &amp; Sheets</span></li>
+    </ul>
+  </div>
+
+  <div class="login-panel">
+    <div class="login-box">
+      <div class="login-header">
+        <h1>Selamat Datang</h1>
+        <p>Masuk ke sistem GeoPresensi untuk melanjutkan.</p>
+      </div>
+
+      <div class="role-group">
+        <button class="role-btn active-admin" id="roleAdmin" onclick="pilihRole('admin')">
+          <span class="role-icon">🔐</span><span class="role-label">Admin / HRD</span>
+        </button>
+        <button class="role-btn" id="roleKaryawan" onclick="pilihRole('karyawan')">
+          <span class="role-icon">👤</span><span class="role-label">Karyawan</span>
+        </button>
+      </div>
+
+      <div id="alertBox"></div>
+
+      <form id="loginForm" onsubmit="handleLogin(event)" novalidate>
+        <div class="form-group">
+          <label class="form-label">Username</label>
+          <div class="input-wrap">
+            <span class="input-icon">👤</span>
+            <input type="text" id="inputUsername" class="form-control" placeholder="Masukkan username" autocomplete="username" required />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <div class="input-wrap">
+            <span class="input-icon">🔒</span>
+            <input type="password" id="inputPassword" class="form-control" placeholder="Masukkan password" autocomplete="current-password" required />
+            <button type="button" class="toggle-pw" onclick="togglePassword()">👁</button>
+          </div>
+        </div>
+        <div class="remember-row">
+          <label class="checkbox-label">
+            <input type="checkbox" id="rememberMe" /> Ingat username
+          </label>
+        </div>
+        <button type="submit" class="btn-login" id="btnLogin">
+          <div class="spinner" id="loginSpinner"></div>
+          <span id="btnLoginText">Masuk ke Dashboard</span>
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  var roleDipilih = "admin";
+
+  window.onload = function() {
+    // Isi username tersimpan
+    var savedUser = "";
+    try { savedUser = localStorage.getItem("gp_saved_username") || ""; } catch(e) {}
+    if (savedUser) {
+      document.getElementById("inputUsername").value = savedUser;
+      document.getElementById("rememberMe").checked  = true;
+    }
+  };
+
+  function pilihRole(role) {
+    roleDipilih = role;
+    document.getElementById("roleAdmin").className    = "role-btn" + (role === "admin"    ? " active-admin" : "");
+    document.getElementById("roleKaryawan").className = "role-btn" + (role === "karyawan" ? " active-karyawan" : "");
+    var btn = document.getElementById("btnLogin");
+    if (role === "karyawan") {
+      btn.classList.add("role-karyawan");
+      document.getElementById("inputUsername").placeholder = "ID Karyawan (contoh: K001)";
+    } else {
+      btn.classList.remove("role-karyawan");
+      document.getElementById("inputUsername").placeholder = "Masukkan username";
+    }
+  }
+
+  function togglePassword() {
+    var input = document.getElementById("inputPassword");
+    var btn   = document.getElementById("togglePw") || event.target;
+    input.type = input.type === "password" ? "text" : "password";
+    btn.textContent = input.type === "password" ? "👁" : "🙈";
+  }
+
+  function handleLogin(e) {
+    e.preventDefault();
+    var username = document.getElementById("inputUsername").value.trim();
+    var password = document.getElementById("inputPassword").value;
+    var remember = document.getElementById("rememberMe").checked;
+
+    if (!username) { tampilAlert("Username wajib diisi.", "error"); return; }
+    if (!password) { tampilAlert("Password wajib diisi.", "error"); return; }
+
+    setLoading(true);
+
+    google.script.run
+      .withSuccessHandler(function(result) {
+        setLoading(false);
+        if (result.sukses) {
+          // Simpan username jika "Ingat saya"
+          try {
+            if (remember) localStorage.setItem("gp_saved_username", username);
+            else localStorage.removeItem("gp_saved_username");
+          } catch(e) {}
+
+          tampilAlert("Login berhasil! Mengalihkan...", "success");
+
+          // Navigasi ke Index dengan token di URL
+          var base = getBaseUrl();
+          var url  = base + "?page=Index"
+            + "&token=" + encodeURIComponent(result.token)
+            + "&role="  + encodeURIComponent(result.role)
+            + "&nama="  + encodeURIComponent(result.nama);
+
+          setTimeout(function() {
+            window.open(url, "_top");
+          }, 600);
+        } else {
+          tampilAlert(result.pesan, "error");
+          document.getElementById("inputPassword").value = "";
+          document.getElementById("inputPassword").focus();
+        }
+      })
+      .withFailureHandler(function(err) {
+        setLoading(false);
+        tampilAlert("Error: " + (err.message || "Coba lagi."), "error");
+      })
+      .loginUser(username, password, roleDipilih);
+  }
+
+  function getBaseUrl() {
+    var href = window.location.href;
+    var execIdx = href.indexOf("/exec");
+    return execIdx !== -1 ? href.substring(0, execIdx + 5) : href.split("?")[0];
+  }
+
+  function setLoading(aktif) {
+    var btn     = document.getElementById("btnLogin");
+    var spinner = document.getElementById("loginSpinner");
+    var label   = document.getElementById("btnLoginText");
+    btn.disabled          = aktif;
+    spinner.style.display = aktif ? "block" : "none";
+    label.textContent     = aktif ? "Memverifikasi..." : "Masuk ke Dashboard";
+  }
+
+  function tampilAlert(pesan, tipe) {
+    var box   = document.getElementById("alertBox");
+    var icons = { error: "❌", success: "✅" };
+    box.className     = "alert-" + tipe;
+    box.style.display = "flex";
+    box.innerHTML     = (icons[tipe] || "") + " <span>" + pesan + "</span>";
+  }
+
+  document.getElementById("inputUsername").addEventListener("input", function() { this.classList.remove("error"); });
+  document.getElementById("inputPassword").addEventListener("input", function() { this.classList.remove("error"); });
+</script>
+</body>
+</html>

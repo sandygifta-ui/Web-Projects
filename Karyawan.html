@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GeoPresensi — Master Karyawan</title>
+  <style>
+    /* =====================================================
+       RESET & BASE
+    ===================================================== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 14px; }
+    body {
+      font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+      background: #F9FAFB;
+      color: #111827;
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* =====================================================
+       SIDEBAR (sama dengan Index.html)
+    ===================================================== */
+    .sidebar {
+      width: 240px; min-height: 100vh; background: #2A1810;
+      display: flex; flex-direction: column;
+      position: fixed; top: 0; left: 0; z-index: 100; overflow-y: auto;
+    }
+    .sidebar-header { padding: 24px 20px 16px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .sidebar-logo { font-family: Georgia,"Times New Roman",serif; font-size:1.3rem; font-weight:700; color:#fff; }
+    .sidebar-logo span { color: #D97706; }
+    .sidebar-date { font-size:0.75rem; color:#9CA3AF; margin-top:4px; }
+    .sidebar-nav { padding: 16px 0; flex: 1; }
+    .nav-group-label {
+      font-size:0.65rem; font-weight:700; color:#6B7280; letter-spacing:1.2px;
+      text-transform:uppercase; padding:12px 20px 6px;
+    }
+    .nav-item {
+      display:flex; align-items:center; gap:10px; padding:10px 20px;
+      cursor:pointer; color:#D1D5DB; font-size:0.85rem;
+      transition:background 0.15s,color 0.15s;
+      text-decoration:none; border:none; background:none; width:100%; text-align:left;
+    }
+    .nav-item:hover { background:rgba(255,255,255,0.07); color:#fff; }
+    .nav-item.active {
+      background:#D97706; color:#fff; font-weight:700;
+      border-radius:6px; margin:0 10px; padding:10px 10px; width:calc(100% - 20px);
+    }
+    .nav-icon { font-size:1rem; width:20px; text-align:center; flex-shrink:0; }
+    .sidebar-footer {
+      padding:16px 20px; border-top:1px solid rgba(255,255,255,0.08);
+      font-size:0.72rem; color:#9CA3AF;
+    }
+    .sidebar-footer strong { color:#D97706; font-size:1rem; }
+
+    /* =====================================================
+       MAIN
+    ===================================================== */
+    .main { margin-left:240px; flex:1; padding:28px 32px; min-height:100vh; }
+
+    /* =====================================================
+       BADGES
+    ===================================================== */
+    .page-badges { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:20px; }
+    .badge { padding:4px 14px; border-radius:9999px; font-size:0.72rem; font-weight:600; letter-spacing:0.4px; }
+    .badge-blue  { background:#2563EB; color:#fff; }
+    .badge-green { background:#10B981; color:#fff; }
+    .badge-gray  { background:transparent; border:1px solid #D1D5DB; color:#6B7280; }
+    .badge-amber { background:#D97706; color:#fff; }
+
+    /* =====================================================
+       STAT CARDS
+    ===================================================== */
+    .stat-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:16px; margin-bottom:28px; }
+    .stat-card {
+      background:#fff; border-radius:10px; padding:16px 18px;
+      border:1px solid #E5E7EB; border-left:4px solid #14B8A6;
+      box-shadow:0 1px 4px rgba(0,0,0,0.05);
+    }
+    .stat-card.teal   { border-left-color:#14B8A6; }
+    .stat-card.purple { border-left-color:#7C3AED; }
+    .stat-card.gold   { border-left-color:#D4A017; }
+    .stat-label { font-size:0.65rem; font-weight:700; text-transform:uppercase; color:#6B7280; letter-spacing:0.8px; }
+    .stat-value { font-size:2rem; font-weight:800; color:#111827; line-height:1.2; margin:4px 0 2px; }
+    .stat-unit  { font-size:0.72rem; color:#9CA3AF; }
+
+    /* =====================================================
+       SECTION HEADER
+    ===================================================== */
+    .section-header { display:flex; align-items:center; gap:10px; margin-bottom:6px; }
+    .section-icon {
+      width:36px; height:36px; background:#1E1B4B; color:#fff;
+      border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:1rem;
+    }
+    .section-title { font-family:Georgia,serif; font-size:1.15rem; font-weight:700; color:#111827; }
+    .section-desc { font-size:0.8rem; color:#6B7280; margin-bottom:20px; margin-left:46px; }
+
+    /* =====================================================
+       FORM CARD
+    ===================================================== */
+    .form-card {
+      background:#fff; border:1px solid #E5E7EB; border-radius:12px;
+      padding:28px; box-shadow:0 1px 6px rgba(0,0,0,0.06); margin-bottom:28px;
+    }
+    .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+    .form-group { display:flex; flex-direction:column; gap:6px; }
+    .form-group.full { grid-column:1/-1; }
+    .form-label { font-size:0.68rem; font-weight:700; text-transform:uppercase; color:#6B7280; letter-spacing:0.7px; }
+    .form-label .req { color:#DC2626; }
+    .form-control {
+      padding:10px 14px; border:1px solid #D1D5DB; border-radius:8px;
+      font-size:0.88rem; color:#111827; background:#fff;
+      transition:border-color 0.15s,box-shadow 0.15s; font-family:inherit;
+    }
+    .form-control:focus { outline:none; border-color:#7C3AED; box-shadow:0 0 0 3px rgba(124,58,237,0.1); }
+    .form-control::placeholder { color:#9CA3AF; font-style:italic; }
+
+    /* =====================================================
+       BUTTONS
+    ===================================================== */
+    .btn {
+      display:inline-flex; align-items:center; gap:8px; padding:10px 20px;
+      border-radius:8px; font-size:0.85rem; font-weight:600; cursor:pointer;
+      transition:all 0.15s; border:none; font-family:inherit;
+    }
+    .btn-primary   { background:#3B0764; color:#fff; }
+    .btn-primary:hover { background:#1E1B4B; }
+    .btn-primary:disabled { background:#9CA3AF; cursor:not-allowed; }
+    .btn-secondary { background:transparent; color:#374151; border:1.5px solid #D1D5DB; }
+    .btn-secondary:hover { background:#F3F4F6; }
+    .btn-danger    { background:transparent; color:#DC2626; border:1.5px solid #DC2626; }
+    .btn-danger:hover { background:#FEF2F2; }
+    .btn-amber     { background:#D97706; color:#fff; }
+    .btn-amber:hover { background:#B45309; }
+    .btn-sm        { padding:7px 14px; font-size:0.78rem; }
+    .btn-xs        { padding:5px 10px; font-size:0.72rem; }
+    .btn-group     { display:flex; gap:12px; flex-wrap:wrap; margin-top:24px; }
+
+    /* =====================================================
+       ALERT
+    ===================================================== */
+    .alert {
+      padding:12px 16px; border-radius:8px; font-size:0.85rem;
+      margin-bottom:16px; display:flex; align-items:flex-start; gap:10px;
+    }
+    .alert-success { background:#F0FDF4; color:#166534; border:1px solid #BBF7D0; }
+    .alert-error   { background:#FEF2F2; color:#991B1B; border:1px solid #FECACA; }
+    .alert-warning { background:#FFFBEB; color:#92400E; border:1px solid #FDE68A; }
+    .alert-info    { background:#EFF6FF; color:#1E40AF; border:1px solid #BFDBFE; }
+    #alertBox      { display:none; }
+    #alertPengaturan { display:none; }
+
+    /* =====================================================
+       TABLE CARD
+    ===================================================== */
+    .table-card {
+      background:#fff; border:1px solid #E5E7EB; border-radius:12px;
+      overflow:hidden; box-shadow:0 1px 6px rgba(0,0,0,0.04); margin-bottom:28px;
+    }
+    .table-card-header {
+      padding:16px 20px; border-bottom:1px solid #E5E7EB;
+      display:flex; align-items:center; justify-content:space-between;
+    }
+    .table-card-title { font-family:Georgia,serif; font-size:0.95rem; font-weight:700; }
+    .table-search {
+      padding:8px 12px; border:1px solid #D1D5DB; border-radius:8px;
+      font-size:0.82rem; width:220px; font-family:inherit;
+    }
+    .table-search:focus { outline:none; border-color:#7C3AED; }
+    table { width:100%; border-collapse:collapse; font-size:0.82rem; }
+    th {
+      background:#F9FAFB; padding:10px 14px; text-align:left;
+      font-size:0.68rem; font-weight:700; text-transform:uppercase;
+      color:#6B7280; letter-spacing:0.6px; border-bottom:1px solid #E5E7EB;
+    }
+    td { padding:10px 14px; border-bottom:1px solid #F3F4F6; color:#374151; vertical-align:middle; }
+    tr:last-child td { border-bottom:none; }
+    tr:hover td { background:#F9FAFB; }
+    .table-empty { text-align:center; color:#9CA3AF; padding:32px 14px; font-size:0.85rem; }
+
+    /* =====================================================
+       CHIPS
+    ===================================================== */
+    .chip {
+      display:inline-block; padding:2px 10px; border-radius:9999px;
+      font-size:0.72rem; font-weight:600;
+    }
+    .chip-green  { background:#D1FAE5; color:#065F46; }
+    .chip-blue   { background:#DBEAFE; color:#1E40AF; }
+    .chip-purple { background:#EDE9FE; color:#5B21B6; }
+    .chip-gray   { background:#F3F4F6; color:#6B7280; }
+
+    /* =====================================================
+       MODAL KONFIRMASI HAPUS
+    ===================================================== */
+    .modal-backdrop {
+      display:none; position:fixed; inset:0;
+      background:rgba(0,0,0,0.45); z-index:200;
+      align-items:center; justify-content:center;
+    }
+    .modal-backdrop.show { display:flex; }
+    .modal-box {
+      background:#fff; border-radius:14px; padding:32px 28px;
+      max-width:400px; width:90%; box-shadow:0 8px 32px rgba(0,0,0,0.2);
+      text-align:center;
+    }
+    .modal-icon  { font-size:2.5rem; margin-bottom:12px; }
+    .modal-title { font-family:Georgia,serif; font-size:1.1rem; font-weight:700; margin-bottom:8px; }
+    .modal-desc  { font-size:0.85rem; color:#6B7280; margin-bottom:24px; }
+    .modal-actions { display:flex; gap:12px; justify-content:center; }
+
+    /* =====================================================
+       LOADING OVERLAY
+    ===================================================== */
+    #loadingOverlay {
+      display:none; position:fixed; inset:0;
+      background:rgba(0,0,0,0.4); z-index:300;
+      align-items:center; justify-content:center;
+    }
+    #loadingOverlay.show { display:flex; }
+    .loading-box {
+      background:#fff; border-radius:14px; padding:28px 36px;
+      text-align:center; box-shadow:0 8px 32px rgba(0,0,0,0.2);
+    }
+    .spinner-lg {
+      width:44px; height:44px; border:5px solid #E5E7EB; border-top-color:#3B0764;
+      border-radius:50%; animation:spin 0.8s linear infinite; margin:0 auto 14px;
+    }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .loading-text { font-size:0.9rem; color:#374151; font-weight:600; }
+
+    /* =====================================================
+       TABS
+    ===================================================== */
+    .tabs { display:flex; gap:4px; margin-bottom:20px; border-bottom:2px solid #E5E7EB; }
+    .tab-btn {
+      padding:10px 20px; border:none; background:none; cursor:pointer;
+      font-size:0.85rem; font-weight:600; color:#6B7280;
+      border-bottom:3px solid transparent; margin-bottom:-2px;
+      font-family:inherit; transition:color 0.15s,border-color 0.15s;
+    }
+    .tab-btn:hover { color:#111827; }
+    .tab-btn.active { color:#3B0764; border-bottom-color:#3B0764; }
+    .tab-content { display:none; }
+    .tab-content.active { display:block; }
+
+    /* =====================================================
+       PENGATURAN SECTION
+    ===================================================== */
+    .pengaturan-info {
+      background:#EFF6FF; border:1px solid #BFDBFE; border-radius:8px;
+      padding:12px 16px; font-size:0.82rem; color:#1E40AF;
+      margin-bottom:20px; display:flex; gap:10px; align-items:flex-start;
+    }
+
+    /* =====================================================
+       RESPONSIVE
+    ===================================================== */
+    @media (max-width:768px) {
+      .sidebar { width:100%; min-height:auto; position:relative; flex-direction:row; overflow-x:auto; align-items:center; }
+      .sidebar-nav { display:flex; padding:8px; flex-direction:row; flex:1; }
+      .nav-group-label { display:none; }
+      .nav-item { padding:8px 12px; white-space:nowrap; }
+      .nav-item.active { margin:0 4px; width:auto; }
+      .sidebar-footer,.sidebar-date { display:none; }
+      .main { margin-left:0; padding:16px; }
+      .form-grid { grid-template-columns:1fr; }
+      .stat-grid { grid-template-columns:repeat(2,1fr); }
+      .table-search { width:100%; }
+      .table-card-header { flex-direction:column; gap:10px; align-items:flex-start; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-logo">Geo<span>Presensi</span></div>
+    <div class="sidebar-date" id="sidebarDate"></div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-group-label">Transaksi Harian</div>
+    <button class="nav-item" onclick="navigateTo('Index')">
+      <span class="nav-icon">📋</span> Absen Masuk/Pulang
+    </button>
+    <div class="nav-group-label">Data Master</div>
+    <button class="nav-item active" onclick="navigateTo('Karyawan')">
+      <span class="nav-icon">👤</span> Master Karyawan
+    </button>
+    <button class="nav-item" onclick="navigateTo('Pengaturan')">
+      <span class="nav-icon">⚙️</span> Pengaturan
+    </button>
+    <div class="nav-group-label">Laporan</div>
+    <button class="nav-item" onclick="navigateTo('Rekap')">
+      <span class="nav-icon">📊</span> Rekap &amp; Laporan
+    </button>
+    <button class="nav-item" onclick="navigateTo('Log')">
+      <span class="nav-icon">🗒️</span> Log Aktivitas
+    </button>
+  </nav>
+  <div class="sidebar-footer">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+      <div style="width:32px;height:32px;background:#D97706;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.9rem;flex-shrink:0">👤</div>
+      <div style="overflow:hidden">
+        <div style="color:#fff;font-size:0.78rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="sidebarNamaUser">–</div>
+        <div style="color:#9CA3AF;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.5px" id="sidebarRoleUser">–</div>
+      </div>
+    </div>
+    <div style="color:#6B7280;font-size:0.7rem;margin-bottom:6px">Karyawan Aktif: <strong id="totalKaryawanSidebar" style="color:#D97706">–</strong></div>
+    <button onclick="logout()" style="width:100%;padding:7px;background:rgba(220,38,38,0.15);border:1px solid rgba(220,38,38,0.3);border-radius:6px;color:#FCA5A5;font-size:0.75rem;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;transition:background 0.15s" onmouseover="this.style.background='rgba(220,38,38,0.25)'" onmouseout="this.style.background='rgba(220,38,38,0.15)'">
+      🚪 Keluar
+    </button>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- Badges -->
+  <div class="page-badges">
+    <span class="badge badge-blue">Data Master</span>
+    <span class="badge badge-amber">Master Karyawan</span>
+    <span class="badge badge-gray">Pengaturan Sistem</span>
+  </div>
+
+  <!-- Stat Cards -->
+  <div class="stat-grid">
+    <div class="stat-card teal">
+      <div class="stat-label">Total Karyawan</div>
+      <div class="stat-value" id="statTotal">–</div>
+      <div class="stat-unit">karyawan terdaftar</div>
+    </div>
+    <div class="stat-card purple">
+      <div class="stat-label">Jabatan</div>
+      <div class="stat-value" id="statJabatan">–</div>
+      <div class="stat-unit">jabatan berbeda</div>
+    </div>
+    <div class="stat-card gold">
+      <div class="stat-label">Dengan Email</div>
+      <div class="stat-value" id="statEmail">–</div>
+      <div class="stat-unit">karyawan punya email</div>
+    </div>
+  </div>
+
+  <!-- Alert -->
+  <div id="alertBox" class="alert"></div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('tabKaryawan', this)">👤 Daftar Karyawan</button>
+    <button class="tab-btn" onclick="switchTab('tabTambah', this)">➕ Tambah Karyawan</button>
+    <button class="tab-btn" onclick="switchTab('tabPengaturan', this)">⚙️ Pengaturan Sistem</button>
+  </div>
+
+  <!-- TAB 1: Daftar Karyawan -->
+  <div id="tabKaryawan" class="tab-content active">
+
+    <div class="section-header">
+      <div class="section-icon">👥</div>
+      <div class="section-title">Daftar Karyawan</div>
+    </div>
+    <div class="section-desc">Semua karyawan yang terdaftar dalam sistem GeoPresensi.</div>
+
+    <div class="table-card">
+      <div class="table-card-header">
+        <span class="table-card-title">Data Karyawan</span>
+        <input
+          type="text"
+          class="table-search"
+          id="searchKaryawan"
+          placeholder="🔍 Cari nama atau jabatan..."
+          oninput="filterTabel()"
+        />
+      </div>
+      <div style="overflow-x:auto">
+        <table id="tabelKaryawan">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nama Lengkap</th>
+              <th>Jabatan</th>
+              <th>Email</th>
+              <th>Jam Masuk</th>
+              <th>Jam Pulang</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyKaryawan">
+            <tr><td colspan="7" class="table-empty">Memuat data karyawan...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- TAB 2: Tambah Karyawan -->
+  <div id="tabTambah" class="tab-content">
+
+    <div class="section-header">
+      <div class="section-icon">➕</div>
+      <div class="section-title">Tambah Karyawan Baru</div>
+    </div>
+    <div class="section-desc">Isi semua field bertanda bintang (*) untuk mendaftarkan karyawan baru.</div>
+
+    <div class="form-card">
+      <div class="form-grid">
+
+        <div class="form-group">
+          <label class="form-label">ID Karyawan <span class="req">*</span></label>
+          <input type="text" id="inputId" class="form-control"
+            placeholder="Contoh: K004" maxlength="20" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Nama Lengkap <span class="req">*</span></label>
+          <input type="text" id="inputNama" class="form-control"
+            placeholder="Contoh: Dewi Lestari" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Jabatan <span class="req">*</span></label>
+          <input type="text" id="inputJabatan" class="form-control"
+            placeholder="Contoh: Kasir, Staf Gudang" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" id="inputEmail" class="form-control"
+            placeholder="Contoh: dewi@email.com" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Jam Masuk Standar <span class="req">*</span></label>
+          <input type="time" id="inputJamMasuk" class="form-control" value="08:00" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Jam Pulang Standar <span class="req">*</span></label>
+          <input type="time" id="inputJamPulang" class="form-control" value="17:00" />
+        </div>
+
+      </div>
+
+      <div class="btn-group">
+        <button class="btn btn-primary" onclick="simpanKaryawan()">
+          💾 Simpan Karyawan
+        </button>
+        <button class="btn btn-secondary" onclick="resetFormKaryawan()">
+          ↺ Reset
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- TAB 3: Pengaturan Sistem -->
+  <div id="tabPengaturan" class="tab-content">
+
+    <div class="section-header">
+      <div class="section-icon">⚙️</div>
+      <div class="section-title">Pengaturan Sistem</div>
+    </div>
+    <div class="section-desc">Konfigurasi lokasi kantor, radius toleransi, dan notifikasi email.</div>
+
+    <div id="alertPengaturan" class="alert"></div>
+
+    <div class="pengaturan-info">
+      ℹ️ <span>Koordinat kantor bisa dicari di <strong>maps.google.com</strong> → klik kanan pada lokasi → salin koordinat (format: -6.200000, 106.816666).</span>
+    </div>
+
+    <div class="form-card">
+      <div class="form-grid">
+
+        <div class="form-group">
+          <label class="form-label">Latitude Kantor <span class="req">*</span></label>
+          <input type="number" id="pgLatKantor" class="form-control" step="0.000001"
+            placeholder="Contoh: -6.200000" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Longitude Kantor <span class="req">*</span></label>
+          <input type="number" id="pgLonKantor" class="form-control" step="0.000001"
+            placeholder="Contoh: 106.816666" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Radius Toleransi (meter) <span class="req">*</span></label>
+          <input type="number" id="pgRadius" class="form-control" min="10" max="5000"
+            placeholder="Contoh: 100" />
+          <small style="color:#9CA3AF;font-size:0.72rem">
+            Karyawan yang absen di luar radius ini akan ditandai "Luar Radius"
+          </small>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Jam Masuk Default <span class="req">*</span></label>
+          <input type="time" id="pgJamMasuk" class="form-control" value="08:00" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Toleransi Keterlambatan (menit) <span class="req">*</span></label>
+          <input type="number" id="pgToleransiMenit" class="form-control" min="0" max="120"
+            placeholder="Contoh: 15" />
+          <small style="color:#9CA3AF;font-size:0.72rem">
+            Karyawan yang masuk lebih dari X menit setelah jam masuk dianggap "Telat"
+          </small>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Email Penerima Notifikasi <span class="req">*</span></label>
+          <input type="email" id="pgEmailHRD" class="form-control"
+            placeholder="Contoh: hrd@toko.com" />
+          <small style="color:#9CA3AF;font-size:0.72rem">
+            Email ini yang akan menerima notifikasi absen luar radius atau keterlambatan
+          </small>
+        </div>
+
+      </div>
+
+      <div class="btn-group">
+        <button class="btn btn-primary" onclick="simpanPengaturan()">
+          💾 Simpan Pengaturan
+        </button>
+        <button class="btn btn-secondary" onclick="muatPengaturan()">
+          🔄 Muat Ulang
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+</main>
+
+<!-- Modal Konfirmasi Hapus -->
+<div class="modal-backdrop" id="modalHapus">
+  <div class="modal-box">
+    <div class="modal-icon">🗑️</div>
+    <div class="modal-title">Hapus Karyawan?</div>
+    <div class="modal-desc" id="modalDesc">
+      Data karyawan ini akan dihapus permanen dari sistem. Riwayat absensinya tetap tersimpan.
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="tutupModal()">Batal</button>
+      <button class="btn btn-danger" id="btnKonfirmasiHapus">Ya, Hapus</button>
+    </div>
+  </div>
+</div>
+
+<!-- Loading Overlay -->
+<div id="loadingOverlay">
+  <div class="loading-box">
+    <div class="spinner-lg"></div>
+    <div class="loading-text" id="loadingText">Memproses...</div>
+  </div>
+</div>
+
+<script>
+  // ---- DATA ----
+  var semuaKaryawan = [];
+  var idKaryawanDihapus = null;
+
+  // ---- SESI GLOBAL (tanpa localStorage) ----
+  var SESI = (function() {
+    function getParam(name) {
+      var match = new RegExp("[?&]" + name + "=([^&#]*)").exec(window.location.search || "");
+      return match ? decodeURIComponent(match[1].replace(/\+/g, " ")) : null;
+    }
+    return {
+      token : getParam("token") || "",
+      role  : getParam("role")  || "admin",
+      nama  : getParam("nama")  || "Admin"
+    };
+  })();
+
+  // ---- INIT ----
+  window.onload = function() {
+    if (!SESI.token) {
+      window.open(window.location.href.split("?")[0] + "?page=Login", "_top");
+      return;
+    }
+    document.getElementById("sidebarNamaUser").textContent = SESI.nama;
+    document.getElementById("sidebarRoleUser").textContent = SESI.role;
+    updateSidebarDate();
+    muatDaftarKaryawan();
+    muatPengaturan();
+  };
+
+  function getBaseUrl() {
+    var href = window.location.href;
+    var execIdx = href.indexOf("/exec");
+    return execIdx !== -1 ? href.substring(0, execIdx + 5) : href.split("?")[0];
+  }
+
+  function getSesiLokal() { return SESI; }
+  function hapusSesiLokal() { SESI.token = ""; }
+
+  function logout() {
+    if (SESI.token) google.script.run.logoutUser(SESI.token);
+    window.open(getBaseUrl() + "?page=Login", "_top");
+  }
+
+  function navigateTo(page) {
+    var base = getBaseUrl();
+    var url;
+    if (page === "Login") {
+      url = base + "?page=Login";
+    } else {
+      url = base + "?page=" + page
+        + "&token=" + encodeURIComponent(SESI.token)
+        + "&role="  + encodeURIComponent(SESI.role)
+        + "&nama="  + encodeURIComponent(SESI.nama);
+    }
+    window.open(url, "_top");
+  }
+
+  function updateSidebarDate() {
+    var opt = { weekday:"long", year:"numeric", month:"long", day:"numeric" };
+    document.getElementById("sidebarDate").textContent =
+      new Date().toLocaleDateString("id-ID", opt);
+  }
+
+  // ---- TABS ----
+  function switchTab(tabId, btnEl) {
+    document.querySelectorAll(".tab-content").forEach(function(el) {
+      el.classList.remove("active");
+    });
+    document.querySelectorAll(".tab-btn").forEach(function(el) {
+      el.classList.remove("active");
+    });
+    document.getElementById(tabId).classList.add("active");
+    btnEl.classList.add("active");
+  }
+
+  // ---- MUAT DAFTAR KARYAWAN ----
+  function muatDaftarKaryawan() {
+    google.script.run
+      .withSuccessHandler(function(list) {
+        semuaKaryawan = list;
+        renderTabel(list);
+        updateStatCards(list);
+        document.getElementById("totalKaryawanSidebar").textContent = list.length;
+      })
+      .withFailureHandler(function(err) {
+        tampilAlert("Gagal memuat data karyawan: " + err.message, "error");
+      })
+      .getKaryawanList();
+  }
+
+  function updateStatCards(list) {
+    document.getElementById("statTotal").textContent = list.length;
+    // Hitung jabatan unik
+    var jabatanSet = {};
+    var emailCount = 0;
+    list.forEach(function(k) {
+      if (k.jabatan) jabatanSet[k.jabatan.toLowerCase()] = true;
+      if (k.email)   emailCount++;
+    });
+    document.getElementById("statJabatan").textContent = Object.keys(jabatanSet).length;
+    document.getElementById("statEmail").textContent   = emailCount;
+  }
+
+  function renderTabel(list) {
+    var tbody = document.getElementById("tbodyKaryawan");
+    if (!list || list.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" class="table-empty">Belum ada karyawan terdaftar. Klik tab "Tambah Karyawan" untuk menambahkan.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = list.map(function(k) {
+      var jabatanChip = '<span class="chip chip-blue">' + (k.jabatan || "-") + '</span>';
+      var emailCell   = k.email
+        ? '<a href="mailto:' + k.email + '" style="color:#7C3AED;text-decoration:none">' + k.email + '</a>'
+        : '<span style="color:#9CA3AF">—</span>';
+      return '<tr data-nama="' + k.nama.toLowerCase() + '" data-jabatan="' + (k.jabatan || "").toLowerCase() + '">'
+        + '<td><code style="background:#F3F4F6;padding:2px 8px;border-radius:4px;font-size:0.78rem">' + k.id + '</code></td>'
+        + '<td><strong>' + k.nama + '</strong></td>'
+        + '<td>' + jabatanChip + '</td>'
+        + '<td>' + emailCell + '</td>'
+        + '<td><span class="chip chip-green">' + (k.jamMasuk || "-") + '</span></td>'
+        + '<td><span class="chip chip-purple">' + (k.jamPulang || "-") + '</span></td>'
+        + '<td>'
+        + '<button class="btn btn-danger btn-xs" onclick="konfirmasiHapus(\'' + k.id + '\',\'' + k.nama.replace(/'/g, "\\'") + '\')">🗑 Hapus</button>'
+        + '</td>'
+        + '</tr>';
+    }).join("");
+  }
+
+  // Filter tabel berdasarkan search
+  function filterTabel() {
+    var q = document.getElementById("searchKaryawan").value.toLowerCase();
+    var rows = document.querySelectorAll("#tbodyKaryawan tr[data-nama]");
+    rows.forEach(function(row) {
+      var nama    = row.dataset.nama    || "";
+      var jabatan = row.dataset.jabatan || "";
+      row.style.display = (nama.includes(q) || jabatan.includes(q)) ? "" : "none";
+    });
+  }
+
+  // ---- TAMBAH KARYAWAN ----
+  function simpanKaryawan() {
+    var id        = document.getElementById("inputId").value.trim();
+    var nama      = document.getElementById("inputNama").value.trim();
+    var jabatan   = document.getElementById("inputJabatan").value.trim();
+    var email     = document.getElementById("inputEmail").value.trim();
+    var jamMasuk  = document.getElementById("inputJamMasuk").value;
+    var jamPulang = document.getElementById("inputJamPulang").value;
+
+    if (!id)        { tampilAlert("ID Karyawan wajib diisi.", "warning"); return; }
+    if (!nama)      { tampilAlert("Nama Lengkap wajib diisi.", "warning"); return; }
+    if (!jabatan)   { tampilAlert("Jabatan wajib diisi.", "warning"); return; }
+    if (!jamMasuk)  { tampilAlert("Jam Masuk Standar wajib diisi.", "warning"); return; }
+    if (!jamPulang) { tampilAlert("Jam Pulang Standar wajib diisi.", "warning"); return; }
+
+    // Validasi email sederhana jika diisi
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      tampilAlert("Format email tidak valid.", "warning");
+      return;
+    }
+
+    tampilLoading("Menyimpan data karyawan...");
+
+    google.script.run
+      .withSuccessHandler(function(result) {
+        sembunyikanLoading();
+        if (result.sukses) {
+          tampilAlert(result.pesan, "success");
+          resetFormKaryawan();
+          muatDaftarKaryawan();
+          // Pindah ke tab daftar
+          document.querySelectorAll(".tab-content").forEach(function(el) { el.classList.remove("active"); });
+          document.querySelectorAll(".tab-btn").forEach(function(el) { el.classList.remove("active"); });
+          document.getElementById("tabKaryawan").classList.add("active");
+          document.querySelectorAll(".tab-btn")[0].classList.add("active");
+        } else {
+          tampilAlert(result.pesan, "error");
+        }
+      })
+      .withFailureHandler(function(err) {
+        sembunyikanLoading();
+        tampilAlert("Gagal menyimpan: " + err.message, "error");
+      })
+      .tambahKaryawan({ id, nama, jabatan, email, jamMasuk, jamPulang });
+  }
+
+  function resetFormKaryawan() {
+    ["inputId","inputNama","inputJabatan","inputEmail"].forEach(function(id) {
+      document.getElementById(id).value = "";
+    });
+    document.getElementById("inputJamMasuk").value  = "08:00";
+    document.getElementById("inputJamPulang").value = "17:00";
+  }
+
+  // ---- HAPUS KARYAWAN ----
+  function konfirmasiHapus(id, nama) {
+    idKaryawanDihapus = id;
+    document.getElementById("modalDesc").textContent =
+      'Yakin ingin menghapus karyawan "' + nama + '" (ID: ' + id + ')? Tindakan ini tidak dapat dibatalkan.';
+    document.getElementById("modalHapus").classList.add("show");
+
+    document.getElementById("btnKonfirmasiHapus").onclick = function() {
+      tutupModal();
+      tampilLoading("Menghapus karyawan...");
+      google.script.run
+        .withSuccessHandler(function(result) {
+          sembunyikanLoading();
+          if (result.sukses) {
+            tampilAlert(result.pesan, "success");
+            muatDaftarKaryawan();
+          } else {
+            tampilAlert(result.pesan, "error");
+          }
+        })
+        .withFailureHandler(function(err) {
+          sembunyikanLoading();
+          tampilAlert("Gagal menghapus: " + err.message, "error");
+        })
+        .hapusKaryawan(idKaryawanDihapus);
+    };
+  }
+
+  function tutupModal() {
+    document.getElementById("modalHapus").classList.remove("show");
+    idKaryawanDihapus = null;
+  }
+
+  // Tutup modal saat klik backdrop
+  document.getElementById("modalHapus").addEventListener("click", function(e) {
+    if (e.target === this) tutupModal();
+  });
+
+  // ---- PENGATURAN ----
+  function muatPengaturan() {
+    // Muat pengaturan dari backend via getKaryawanList tidak langsung,
+    // kita pakai workaround: panggil simpanPengaturan dengan data kosong untuk membaca
+    // Sebenarnya idealnya ada fungsi getPengaturan() yang di-expose ke client.
+    // Untuk sekarang, kita isi dengan nilai default yang bisa diubah user.
+    // Jika sudah pernah disimpan, user bisa muat ulang.
+    google.script.run
+      .withSuccessHandler(function(config) {
+        if (config && config["Latitude Kantor"] !== undefined) {
+          document.getElementById("pgLatKantor").value       = config["Latitude Kantor"] || "";
+          document.getElementById("pgLonKantor").value       = config["Longitude Kantor"] || "";
+          document.getElementById("pgRadius").value          = config["Radius Toleransi (meter)"] || 100;
+          document.getElementById("pgJamMasuk").value        = config["Jam Masuk Default"] || "08:00";
+          document.getElementById("pgToleransiMenit").value  = config["Toleransi Keterlambatan (menit)"] || 15;
+          document.getElementById("pgEmailHRD").value        = config["Email Penerima Notifikasi"] || "";
+        }
+      })
+      .withFailureHandler(function() {
+        // Abaikan jika gagal muat, user bisa isi manual
+      })
+      .getPengaturan();
+  }
+
+  function simpanPengaturan() {
+    var latKantor      = document.getElementById("pgLatKantor").value.trim();
+    var lonKantor      = document.getElementById("pgLonKantor").value.trim();
+    var radius         = document.getElementById("pgRadius").value.trim();
+    var jamMasuk       = document.getElementById("pgJamMasuk").value;
+    var toleransiMenit = document.getElementById("pgToleransiMenit").value.trim();
+    var emailHRD       = document.getElementById("pgEmailHRD").value.trim();
+
+    if (!latKantor || !lonKantor) { tampilAlertPengaturan("Koordinat kantor wajib diisi.", "warning"); return; }
+    if (!radius)                  { tampilAlertPengaturan("Radius toleransi wajib diisi.", "warning"); return; }
+    if (!jamMasuk)                { tampilAlertPengaturan("Jam masuk default wajib diisi.", "warning"); return; }
+    if (!emailHRD)                { tampilAlertPengaturan("Email notifikasi wajib diisi.", "warning"); return; }
+
+    tampilLoading("Menyimpan pengaturan...");
+
+    google.script.run
+      .withSuccessHandler(function(result) {
+        sembunyikanLoading();
+        if (result.sukses) {
+          tampilAlertPengaturan(result.pesan, "success");
+        } else {
+          tampilAlertPengaturan(result.pesan, "error");
+        }
+      })
+      .withFailureHandler(function(err) {
+        sembunyikanLoading();
+        tampilAlertPengaturan("Gagal menyimpan: " + err.message, "error");
+      })
+      .simpanPengaturan({ latKantor, lonKantor, radius, jamMasuk, toleransiMenit, emailHRD });
+  }
+
+  // ---- HELPERS ----
+  function tampilLoading(teks) {
+    document.getElementById("loadingText").textContent = teks || "Memproses...";
+    document.getElementById("loadingOverlay").classList.add("show");
+  }
+
+  function sembunyikanLoading() {
+    document.getElementById("loadingOverlay").classList.remove("show");
+  }
+
+  function tampilAlert(pesan, tipe) {
+    var box   = document.getElementById("alertBox");
+    var icons = { success:"✅", error:"❌", warning:"⚠️", info:"ℹ️" };
+    box.className = "alert alert-" + tipe;
+    box.innerHTML = (icons[tipe] || "ℹ️") + " <span>" + pesan + "</span>";
+    box.style.display = "flex";
+    if (tipe === "success" || tipe === "info") {
+      setTimeout(function() { box.style.display = "none"; }, 5000);
+    }
+    box.scrollIntoView({ behavior:"smooth", block:"center" });
+  }
+
+  function tampilAlertPengaturan(pesan, tipe) {
+    var box   = document.getElementById("alertPengaturan");
+    var icons = { success:"✅", error:"❌", warning:"⚠️", info:"ℹ️" };
+    box.className = "alert alert-" + tipe;
+    box.innerHTML = (icons[tipe] || "ℹ️") + " <span>" + pesan + "</span>";
+    box.style.display = "flex";
+    if (tipe === "success") {
+      setTimeout(function() { box.style.display = "none"; }, 5000);
+    }
+  }
+</script>
+
+</body>
+</html>
