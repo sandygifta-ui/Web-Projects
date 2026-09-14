@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#4CAF50">
+  <title>Jejak</title>
+  <?!= include('style.css'); ?>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ============================================================
+       HALAMAN: LOGIN
+       ============================================================ -->
+  <section id="page-login" class="page active">
+    <div class="login-container">
+      <div class="login-logo">
+        <div class="logo-icon">📓</div>
+        <h1>Jejak</h1>
+        <p>Catatan harian pribadi kamu</p>
+      </div>
+      <div class="login-card">
+        <div class="login-error" id="login-error"></div>
+        <form onsubmit="submitLogin(event)">
+          <div class="form-group">
+            <label for="login-username">Username</label>
+            <input id="login-username" type="text" placeholder="Masukkan username" autocomplete="username" autocapitalize="none">
+          </div>
+          <div class="form-group">
+            <label for="login-password">Password</label>
+            <input id="login-password" type="password" placeholder="Masukkan password" autocomplete="current-password">
+          </div>
+          <button type="submit" class="btn btn-primary" id="login-btn">Masuk</button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       TOP BAR (muncul setelah login)
+       ============================================================ -->
+  <div id="top-bar">
+    <span class="top-bar-name">👤 <span id="top-bar-name"></span></span>
+    <button class="btn-logout" onclick="logout()">Keluar</button>
+  </div>
+
+  <!-- ============================================================
+       KONTEN UTAMA (tersembunyi sampai login)
+       ============================================================ -->
+  <div id="main-wrapper" style="display:none">
+
+    <!-- HALAMAN: HARI INI -->
+    <section id="page-today" class="page active">
+      <div id="today-content">
+        <div class="loading"><div class="spinner"></div>Memuat data...</div>
+      </div>
+    </section>
+
+    <!-- HALAMAN: TUGAS -->
+    <section id="page-tasks" class="page">
+      <div class="page-header">
+        <h1>📋 Tugas</h1>
+      </div>
+      <div class="filter-bar">
+        <select id="task-filter-status">
+          <option value="Semua">Semua Status</option>
+          <option value="Belum">Belum</option>
+          <option value="Sedang Dikerjakan">Sedang Dikerjakan</option>
+          <option value="Selesai">Selesai</option>
+        </select>
+      </div>
+      <div id="tasks-list">
+        <div class="loading"><div class="spinner"></div>Memuat tugas...</div>
+      </div>
+      <button class="fab" onclick="openTaskForm()" title="Tambah Tugas">＋</button>
+    </section>
+
+    <!-- HALAMAN: PENGELUARAN -->
+    <section id="page-expenses" class="page">
+      <div class="page-header">
+        <h1>💰 Pengeluaran</h1>
+      </div>
+      <div class="summary-box" id="expenses-summary">
+        <div class="loading"><div class="spinner"></div>Memuat...</div>
+      </div>
+      <div class="filter-bar">
+        <select id="exp-filter-kategori">
+          <option value="">Semua Kategori</option>
+          <option value="Makan">Makan</option>
+          <option value="Transport">Transport</option>
+          <option value="Jajan">Jajan</option>
+          <option value="Kebutuhan">Kebutuhan</option>
+          <option value="Lainnya">Lainnya</option>
+        </select>
+      </div>
+      <div class="filter-bar">
+        <input type="date" id="exp-filter-from" placeholder="Dari tanggal">
+        <input type="date" id="exp-filter-to"   placeholder="Sampai tanggal">
+        <button class="btn-filter-reset" id="exp-filter-reset">Reset</button>
+      </div>
+      <div id="expenses-list">
+        <div class="loading"><div class="spinner"></div>Memuat pengeluaran...</div>
+      </div>
+      <button class="fab" onclick="openExpenseForm()" title="Tambah Pengeluaran">＋</button>
+    </section>
+
+    <!-- HALAMAN: CATATAN HARIAN -->
+    <section id="page-notes" class="page">
+      <div class="page-header">
+        <h1>📓 Catatan Harian</h1>
+      </div>
+      <div id="notes-list">
+        <div class="loading"><div class="spinner"></div>Memuat catatan...</div>
+      </div>
+      <button class="fab" onclick="openNoteForm()" title="Tulis Catatan">＋</button>
+    </section>
+
+  </div><!-- /#main-wrapper -->
+
+  <!-- ============================================================
+       BOTTOM NAVIGATION
+       ============================================================ -->
+  <nav id="bottom-nav" role="navigation" aria-label="Navigasi utama" style="display:none">
+    <button class="nav-item active" data-page="today" aria-label="Hari Ini">
+      <span class="nav-icon">🏠</span>
+      <span>Hari Ini</span>
+    </button>
+    <button class="nav-item" data-page="tasks" aria-label="Tugas">
+      <span class="nav-icon">✅</span>
+      <span>Tugas</span>
+    </button>
+    <button class="nav-item" data-page="expenses" aria-label="Pengeluaran">
+      <span class="nav-icon">💰</span>
+      <span>Pengeluaran</span>
+    </button>
+    <button class="nav-item" data-page="notes" aria-label="Catatan">
+      <span class="nav-icon">📓</span>
+      <span>Catatan</span>
+    </button>
+  </nav>
+
+  <!-- ============================================================
+       MODAL OVERLAY
+       ============================================================ -->
+  <div id="modal-overlay" role="dialog" aria-modal="true" aria-label="Dialog">
+    <div id="modal-panel"></div>
+  </div>
+
+  <!-- ============================================================
+       TOAST CONTAINER
+       ============================================================ -->
+  <div id="toast-container" aria-live="polite" aria-atomic="false"></div>
+
+</div><!-- /#app -->
+
+<?!= include('app.js'); ?>
+</body>
+</html>

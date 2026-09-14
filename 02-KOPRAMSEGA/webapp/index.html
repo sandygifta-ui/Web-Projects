@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>KOPRAMSEGA</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    <?!= include('style'); ?>
+  </style>
+</head>
+<body>
+
+<!-- HALAMAN LOGIN -->
+<div id="page-login" class="page active">
+  <div class="login-wrapper">
+
+    <!-- LOGO AMBALAN -->
+    <div class="login-header">
+      <div class="ambalan-logo">
+        <div class="ambalan-half ambalan-left">
+          <span class="ambalan-label">SAMBERNYAWA</span>
+        </div>
+        <div class="ambalan-center">
+          <span class="fleur">⚜</span>
+        </div>
+        <div class="ambalan-half ambalan-right">
+          <span class="ambalan-label">DEWI SARTIKA</span>
+        </div>
+      </div>
+      <h1 class="login-title">KOPRAMSEGA</h1>
+      <p class="login-sub">Komando Pramuka SMEA 3</p>
+    </div>
+
+    <!-- LOGIN USER (tampil di depan) -->
+    <div class="login-card" id="card-user">
+      <p class="login-card-title">Masuk sebagai Anggota</p>
+      <div class="form-group">
+        <label>EMAIL</label>
+        <input type="email" id="input-email-user" placeholder="email@example.com" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label>PASSWORD</label>
+        <input type="password" id="input-pass-user" placeholder="Password kamu">
+      </div>
+      <div id="login-error-user" class="error-msg" style="display:none"></div>
+      <button class="btn-login-user" id="btn-login-user" onclick="doLoginUser()">
+        <span id="login-text-user">Masuk</span>
+        <span id="login-loading-user" style="display:none">Memuat...</span>
+      </button>
+    </div>
+
+    <!-- TRIGGER LOGIN ADMIN (tersembunyi, tap logo 5x) -->
+    <div id="card-admin" style="display:none">
+      <div class="login-card login-card-admin">
+        <p class="login-card-title admin-title">Login Admin</p>
+        <div class="form-group">
+          <label>EMAIL ADMIN</label>
+          <input type="email" id="input-email-admin" placeholder="Email admin" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label>PASSWORD ADMIN</label>
+          <input type="password" id="input-pass-admin" placeholder="Password admin">
+        </div>
+        <div id="login-error-admin" class="error-msg" style="display:none"></div>
+        <button class="btn-login-admin" id="btn-login-admin" onclick="doLoginAdmin()">
+          <span id="login-text-admin">Masuk sebagai Admin</span>
+          <span id="login-loading-admin" style="display:none">Memuat...</span>
+        </button>
+      </div>
+    </div>
+
+    <p class="login-footer" id="login-footer-tap" onclick="tapLogo()">Digital Scout Management System</p>
+  </div>
+</div>
+
+<!-- HALAMAN UTAMA (setelah login) -->
+<div id="page-main" class="page" style="display:none">
+
+  <!-- HEADER -->
+  <div class="top-header">
+    <div class="header-left">
+      <span class="header-logo">⚜️</span>
+      <span class="header-title">KOPRAMSEGA</span>
+    </div>
+    <div class="header-right">
+      <span id="header-username" class="header-user"></span>
+      <button class="btn-logout" onclick="logout()">Keluar</button>
+    </div>
+  </div>
+
+  <!-- KONTEN HALAMAN -->
+  <div class="content-area" id="content-area">
+    <!-- Diisi oleh JS -->
+  </div>
+
+  <!-- BOTTOM NAVIGATION -->
+  <div class="bottom-nav">
+    <div class="nav-item active" id="nav-dashboard" onclick="showPage('dashboard')">
+      <span class="nav-icon">🏠</span>
+      <span class="nav-label">Beranda</span>
+    </div>
+    <div class="nav-item" id="nav-jadwal" onclick="showPage('jadwal')">
+      <span class="nav-icon">📅</span>
+      <span class="nav-label">Jadwal</span>
+    </div>
+    <div class="nav-item" id="nav-timer" onclick="showPage('timer')">
+      <span class="nav-icon">⏱️</span>
+      <span class="nav-label">Timer</span>
+    </div>
+    <div class="nav-item" id="nav-latihan" onclick="showPage('latihan')">
+      <span class="nav-icon">📝</span>
+      <span class="nav-label">Latihan</span>
+    </div>
+    <div class="nav-item" id="nav-pengumuman" onclick="showPage('pengumuman')">
+      <span class="nav-icon">📢</span>
+      <span class="nav-label">Pengumuman</span>
+    </div>
+  </div>
+
+</div>
+
+<!-- MODAL -->
+<div id="modal-overlay" class="modal-overlay" style="display:none" onclick="closeModal()">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h3 id="modal-title"></h3>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast" class="toast" style="display:none"></div>
+
+<script>
+  <?!= include('app'); ?>
+</script>
+
+</body>
+</html>

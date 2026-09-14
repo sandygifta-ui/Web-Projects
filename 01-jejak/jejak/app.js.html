@@ -1,0 +1,864 @@
+<script>
+// =============================================================
+// JEJAK — Frontend JavaScript
+// =============================================================
+
+// ---------------------------------------------------------------
+// CONFIG: URL Apps Script Web App
+// Setelah deploy, paste URL-nya di sini.
+// ---------------------------------------------------------------
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxxoLgdWR8Y3U9i2SBxVGGqlnkDtUUImTFfZcBG4O544mmrBd2DfAmLB0diirSCjwgQfg/exec';
+
+// ---------------------------------------------------------------
+// STATE
+// ---------------------------------------------------------------
+let currentPage    = 'today';
+let tasksCache     = [];
+let expensesCache  = [];
+let notesCache     = [];
+let taskFilterStatus = 'Semua';
+let expFilter      = { month: '', kategori: '', from: '', to: '' };
+let statusPickerTarget = null;
+
+// ---------------------------------------------------------------
+// AUTH — sessionStorage
+// ---------------------------------------------------------------
+const SESSION_KEY = 'jejak_user';
+
+function getSessionUser() {
+  try { return JSON.parse(sessionStorage.getItem(SESSION_KEY)); } catch { return null; }
+}
+
+function setSessionUser(user) {
+  sessionStorage.setItem(SESSION_KEY, JSON.stringify(user));
+}
+
+function clearSessionUser() {
+  sessionStorage.removeItem(SESSION_KEY);
+}
+
+function showLoginPage() {
+  document.getElementById('page-login').classList.add('active');
+  document.getElementById('main-wrapper').style.display = 'none';
+  document.getElementById('top-bar').classList.remove('visible');
+  document.getElementById('bottom-nav').style.display = 'none';
+}
+
+function showMainApp(user) {
+  document.getElementById('page-login').classList.remove('active');
+  document.getElementById('main-wrapper').style.display = 'block';
+  document.getElementById('top-bar').classList.add('visible');
+  document.getElementById('bottom-nav').style.display = 'flex';
+  // Update nama di top bar
+  document.getElementById('top-bar-name').textContent = user.nama_lengkap || user.username;
+}
+
+async function submitLogin(event) {
+  event.preventDefault();
+  const username = document.getElementById('login-username').value.trim();
+  const password = document.getElementById('login-password').value;
+  const errEl    = document.getElementById('login-error');
+  const btn      = document.getElementById('login-btn');
+
+  errEl.classList.remove('visible');
+
+  if (!username || !password) {
+    errEl.textContent = 'Username dan password wajib diisi.';
+    errEl.classList.add('visible');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Masuk...';
+
+  try {
+    const user = await api('login', { username, password });
+    setSessionUser(user);
+    showMainApp(user);
+    showPage('today');
+  } catch (err) {
+    errEl.textContent = err.message === 'Username atau password salah.'
+      ? 'Username atau password salah.'
+      : 'Gagal menghubungi server, coba lagi.';
+    errEl.classList.add('visible');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Masuk';
+  }
+}
+
+function logout() {
+  clearSessionUser();
+  showLoginPage();
+  // Reset form login
+  document.getElementById('login-username').value = '';
+  document.getElementById('login-password').value = '';
+  document.getElementById('login-error').classList.remove('visible');
+}
+
+// ---------------------------------------------------------------
+// API WRAPPER
+// ---------------------------------------------------------------
+async function api(action, data = {}) {
+  const res = await fetch(APPS_SCRIPT_URL, {
+    method: 'POST',
+    body: JSON.stringify({ action, data }),
+  });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const json = await res.json();
+  if (json.status === 'error') throw new Error(json.message);
+  return json.data;
+}
+
+// ---------------------------------------------------------------
+// UTILITIES
+// ---------------------------------------------------------------
+function formatRupiah(n) {
+  return 'Rp ' + Number(n || 0).toLocaleString('id-ID');
+}
+
+function formatDate(str) {
+  if (!str) return '-';
+  const [y, m, d] = str.split('-');
+  const names = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+  return `${parseInt(d)} ${names[parseInt(m) - 1]} ${y}`;
+}
+
+function todayISO() {
+  const now = new Date();
+  return now.toISOString().split('T')[0];
+}
+
+function escape(str) {
+  return String(str || '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function moodEmoji(mood) {
+  const map = { 'Baik': '😊', 'Biasa': '😐', 'Kurang Baik': '😔' };
+  return map[mood] || '';
+}
+
+function prioritasBadge(p) {
+  const cls = { 'Tinggi': 'badge-tinggi', 'Sedang': 'badge-sedang', 'Rendah': 'badge-rendah' };
+  return `<span class="badge ${cls[p] || ''}">${escape(p)}</span>`;
+}
+
+function statusBadge(s) {
+  const cls = {
+    'Belum': 'badge-belum',
+    'Sedang Dikerjakan': 'badge-sedang-dikerjakan',
+    'Selesai': 'badge-selesai'
+  };
+  return `<span class="badge ${cls[s] || ''}">${escape(s)}</span>`;
+}
+
+// ---------------------------------------------------------------
+// TOAST
+// ---------------------------------------------------------------
+function showToast(message, type = 'success') {
+  const container = document.getElementById('toast-container');
+  const el = document.createElement('div');
+  el.className = `toast toast-${type}`;
+  el.textContent = message;
+  container.appendChild(el);
+  setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity 0.3s'; }, 2700);
+  setTimeout(() => el.remove(), 3100);
+}
+
+// ---------------------------------------------------------------
+// MODAL
+// ---------------------------------------------------------------
+function openModal(contentHtml) {
+  document.getElementById('modal-panel').innerHTML = contentHtml;
+  document.getElementById('modal-overlay').classList.add('open');
+  // Focus trap: fokus ke elemen pertama
+  const first = document.querySelector('#modal-panel input, #modal-panel select, #modal-panel textarea');
+  if (first) setTimeout(() => first.focus(), 100);
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+  document.getElementById('modal-panel').innerHTML = '';
+}
+
+// Tutup modal saat klik overlay
+document.getElementById('modal-overlay').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('modal-overlay')) closeModal();
+});
+
+// ---------------------------------------------------------------
+// NAVIGATION
+// ---------------------------------------------------------------
+function showPage(pageId) {
+  currentPage = pageId;
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + pageId).classList.add('active');
+  document.querySelector(`.nav-item[data-page="${pageId}"]`).classList.add('active');
+
+  // Tutup status picker jika terbuka
+  closeStatusPicker();
+
+  if (pageId === 'today')    loadTodayPage();
+  if (pageId === 'tasks')    loadTasksPage();
+  if (pageId === 'expenses') loadExpensesPage();
+  if (pageId === 'notes')    loadNotesPage();
+}
+
+document.querySelectorAll('.nav-item').forEach(item => {
+  item.addEventListener('click', () => showPage(item.dataset.page));
+});
+
+// ---------------------------------------------------------------
+// LOADING HELPER
+// ---------------------------------------------------------------
+function setLoading(containerId) {
+  document.getElementById(containerId).innerHTML =
+    `<div class="loading"><div class="spinner"></div>Memuat data...</div>`;
+}
+
+function setError(containerId, msg) {
+  document.getElementById(containerId).innerHTML =
+    `<div class="empty-state"><div class="empty-icon">⚠️</div><p>${escape(msg)}</p></div>`;
+}
+
+// ---------------------------------------------------------------
+// PAGE: HARI INI
+// ---------------------------------------------------------------
+async function loadTodayPage() {
+  setLoading('today-content');
+  try {
+    const d = await api('getTodayData');
+    renderTodayPage(d);
+  } catch (err) {
+    setError('today-content', 'Gagal memuat data: ' + err.message);
+  }
+}
+
+function renderTodayPage(d) {
+  const today = d.today || todayISO();
+  const days  = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+  const dt    = new Date(today + 'T00:00:00');
+  const dayName = days[dt.getDay()];
+
+  // Breakdown pengeluaran
+  let breakdownHtml = '';
+  const bd = d.breakdown || {};
+  const keys = Object.keys(bd);
+  if (keys.length) {
+    breakdownHtml = `<ul class="summary-breakdown">` +
+      keys.map(k => `<li><span class="breakdown-kat">${escape(k)}</span><span class="breakdown-amt">${formatRupiah(bd[k])}</span></li>`).join('') +
+      `</ul>`;
+  } else {
+    breakdownHtml = `<p style="font-size:0.82rem;color:var(--text-muted);margin-top:4px;">Belum ada pengeluaran hari ini</p>`;
+  }
+
+  // Daftar tugas mendesak
+  const tugas = d.tugas || [];
+  let tugasHtml = '';
+  if (tugas.length === 0) {
+    tugasHtml = `<div class="empty-state" style="padding:20px 0"><div class="empty-icon">🎉</div><p>Tidak ada tugas mendesak hari ini</p></div>`;
+  } else {
+    tugasHtml = tugas.map(t => renderTaskCard(t, true)).join('');
+  }
+
+  document.getElementById('today-content').innerHTML = `
+    <div class="page-header">
+      <h1>Halo, ${escape((getSessionUser() || {}).nama_lengkap || 'Jejak')}! 👋</h1>
+      <p>${dayName}, ${formatDate(today)}</p>
+    </div>
+
+    <div class="summary-box">
+      <div class="summary-total-label">💰 Pengeluaran Hari Ini</div>
+      <div class="summary-total-amount">${formatRupiah(d.totalHariIni)}</div>
+      ${breakdownHtml}
+    </div>
+
+    <div class="section-title">✅ Tugas Hari Ini &amp; Terlambat</div>
+    ${tugasHtml}
+
+    <div class="quick-actions" style="margin-top:24px">
+      <button class="btn-quick" onclick="openTaskForm()">
+        <span class="btn-icon">➕</span> Tambah Tugas
+      </button>
+      <button class="btn-quick" onclick="openExpenseForm()">
+        <span class="btn-icon">💸</span> Tambah Pengeluaran
+      </button>
+      <button class="btn-quick btn-full" onclick="openNoteForm()">
+        <span class="btn-icon">📝</span> Tulis Catatan Hari Ini
+      </button>
+    </div>`;
+}
+
+// ---------------------------------------------------------------
+// PAGE: TUGAS
+// ---------------------------------------------------------------
+async function loadTasksPage() {
+  setLoading('tasks-list');
+  try {
+    tasksCache = await api('getTasks', { status: taskFilterStatus });
+    renderTasksList();
+  } catch (err) {
+    setError('tasks-list', 'Gagal memuat tugas: ' + err.message);
+  }
+}
+
+function renderTasksList() {
+  const container = document.getElementById('tasks-list');
+  if (!tasksCache.length) {
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><p>Belum ada tugas${taskFilterStatus !== 'Semua' ? ' dengan status "' + taskFilterStatus + '"' : ''}</p></div>`;
+    return;
+  }
+  container.innerHTML = tasksCache.map(t => renderTaskCard(t, false)).join('');
+}
+
+function renderTaskCard(t, compact) {
+  const today    = todayISO();
+  const deadline = t['Deadline'] || '';
+  let cls = '';
+  if (t['Status'] !== 'Selesai') {
+    if (deadline && deadline < today)     cls = 'overdue';
+    else if (deadline && deadline === today) cls = 'due-today';
+  }
+  if (t['Status'] === 'Selesai') cls += ' done';
+
+  const isChecked = t['Status'] === 'Selesai';
+
+  return `
+    <div class="card task-card ${cls}" id="task-${escape(t['Tugas_ID'])}">
+      <div class="task-checkbox ${isChecked ? 'checked' : ''}"
+           onclick="quickStatusClick(event, '${escape(t['Tugas_ID'])}', this)"
+           title="Ubah status">
+        ${isChecked ? '✓' : ''}
+      </div>
+      <div class="task-body">
+        <div class="task-title">${escape(t['Judul_Tugas'])}</div>
+        <div class="task-meta">
+          <span class="badge badge-kategori">${escape(t['Kategori'])}</span>
+          ${t['Deadline'] ? `<span>📅 ${formatDate(t['Deadline'])}</span>` : ''}
+          ${prioritasBadge(t['Prioritas'])}
+          ${statusBadge(t['Status'])}
+        </div>
+      </div>
+      ${!compact ? `
+      <div class="task-actions">
+        <button onclick="openTaskForm(${JSON.stringify(t).replace(/"/g, '&quot;')})" title="Edit">✏️</button>
+        <button onclick="confirmDeleteTask('${escape(t['Tugas_ID'])}')" title="Hapus">🗑️</button>
+      </div>` : ''}
+    </div>`;
+}
+
+// Status picker (dropdown inline saat klik checkbox)
+function quickStatusClick(event, taskId, checkboxEl) {
+  event.stopPropagation();
+  // Tutup picker yang mungkin sudah terbuka
+  closeStatusPicker();
+
+  const picker = document.createElement('div');
+  picker.className = 'status-picker open';
+  picker.id = 'status-picker';
+  const statuses = ['Belum', 'Sedang Dikerjakan', 'Selesai'];
+  picker.innerHTML = statuses.map(s =>
+    `<div class="status-picker-item" onclick="applyStatus('${escape(taskId)}','${escape(s)}')">${s}</div>`
+  ).join('');
+
+  // Posisikan di bawah checkbox
+  const rect = checkboxEl.getBoundingClientRect();
+  picker.style.position = 'fixed';
+  picker.style.top  = (rect.bottom + 4) + 'px';
+  picker.style.left = rect.left + 'px';
+
+  document.body.appendChild(picker);
+  statusPickerTarget = taskId;
+
+  // Tutup saat klik di luar
+  setTimeout(() => document.addEventListener('click', closeStatusPickerOutside), 0);
+}
+
+function closeStatusPickerOutside(e) {
+  const picker = document.getElementById('status-picker');
+  if (picker && !picker.contains(e.target)) closeStatusPicker();
+}
+
+function closeStatusPicker() {
+  const picker = document.getElementById('status-picker');
+  if (picker) picker.remove();
+  document.removeEventListener('click', closeStatusPickerOutside);
+  statusPickerTarget = null;
+}
+
+async function applyStatus(taskId, newStatus) {
+  closeStatusPicker();
+  try {
+    await api('updateTask', { id: taskId, Status: newStatus });
+    showToast('Status diperbarui');
+    if (currentPage === 'today') loadTodayPage();
+    else if (currentPage === 'tasks') loadTasksPage();
+  } catch (err) {
+    showToast('Gagal memperbarui status: ' + err.message, 'error');
+  }
+}
+
+async function confirmDeleteTask(taskId) {
+  if (!confirm('Hapus tugas ini?')) return;
+  try {
+    await api('deleteTask', { id: taskId });
+    showToast('Tugas dihapus');
+    if (currentPage === 'today') loadTodayPage();
+    else loadTasksPage();
+  } catch (err) {
+    showToast('Gagal menghapus: ' + err.message, 'error');
+  }
+}
+
+// Filter status tugas
+document.getElementById('task-filter-status').addEventListener('change', function () {
+  taskFilterStatus = this.value;
+  loadTasksPage();
+});
+
+// ---------------------------------------------------------------
+// FORM: TUGAS (Tambah / Edit)
+// ---------------------------------------------------------------
+function openTaskForm(task = null) {
+  const isEdit = task !== null;
+  const t = task || {};
+
+  const html = `
+    <div class="modal-header">
+      <h2>${isEdit ? 'Edit Tugas' : 'Tambah Tugas'}</h2>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <form id="task-form" onsubmit="submitTaskForm(event, ${isEdit ? `'${escape(t['Tugas_ID'])}'` : 'null'})">
+      <div class="form-group">
+        <label for="tf-judul">Judul Tugas *</label>
+        <input id="tf-judul" type="text" value="${escape(t['Judul_Tugas'] || '')}" placeholder="Contoh: Kerjakan laporan">
+        <div class="form-error" id="err-judul">Wajib diisi</div>
+      </div>
+      <div class="form-group">
+        <label for="tf-kategori">Kategori *</label>
+        <input id="tf-kategori" type="text" value="${escape(t['Kategori'] || '')}" placeholder="Kuliah / Project / Pribadi">
+        <div class="form-error" id="err-kategori">Wajib diisi</div>
+      </div>
+      <div class="form-group">
+        <label for="tf-deadline">Deadline *</label>
+        <input id="tf-deadline" type="date" value="${escape(t['Deadline'] || '')}">
+        <div class="form-error" id="err-deadline">Wajib diisi</div>
+      </div>
+      <div class="form-group">
+        <label for="tf-prioritas">Prioritas *</label>
+        <select id="tf-prioritas">
+          <option value="">-- Pilih --</option>
+          ${['Tinggi','Sedang','Rendah'].map(p =>
+            `<option value="${p}" ${t['Prioritas'] === p ? 'selected' : ''}>${p}</option>`
+          ).join('')}
+        </select>
+        <div class="form-error" id="err-prioritas">Wajib diisi</div>
+      </div>
+      ${isEdit ? `
+      <div class="form-group">
+        <label for="tf-status">Status</label>
+        <select id="tf-status">
+          ${['Belum','Sedang Dikerjakan','Selesai'].map(s =>
+            `<option value="${s}" ${t['Status'] === s ? 'selected' : ''}>${s}</option>`
+          ).join('')}
+        </select>
+      </div>` : ''}
+      <button type="submit" class="btn btn-primary" id="task-submit-btn">
+        ${isEdit ? 'Simpan Perubahan' : 'Tambah Tugas'}
+      </button>
+    </form>`;
+
+  openModal(html);
+}
+
+async function submitTaskForm(event, taskId) {
+  event.preventDefault();
+  let valid = true;
+
+  const judul    = document.getElementById('tf-judul').value.trim();
+  const kategori = document.getElementById('tf-kategori').value.trim();
+  const deadline = document.getElementById('tf-deadline').value;
+  const prioritas = document.getElementById('tf-prioritas').value;
+  const statusEl = document.getElementById('tf-status');
+  const status   = statusEl ? statusEl.value : 'Belum';
+
+  // Validasi
+  const validate = (id, errId, cond) => {
+    document.getElementById(id).classList.toggle('error', !cond);
+    document.getElementById(errId).classList.toggle('visible', !cond);
+    if (!cond) valid = false;
+  };
+  validate('tf-judul',    'err-judul',    !!judul);
+  validate('tf-kategori', 'err-kategori', !!kategori);
+  validate('tf-deadline', 'err-deadline', !!deadline);
+  validate('tf-prioritas','err-prioritas',!!prioritas);
+  if (!valid) return;
+
+  const btn = document.getElementById('task-submit-btn');
+  btn.disabled = true;
+  btn.textContent = 'Menyimpan...';
+
+  try {
+    if (taskId) {
+      await api('updateTask', { id: taskId, Judul_Tugas: judul, Kategori: kategori, Deadline: deadline, Prioritas: prioritas, Status: status });
+      showToast('Tugas berhasil diperbarui');
+    } else {
+      await api('addTask', { Judul_Tugas: judul, Kategori: kategori, Deadline: deadline, Prioritas: prioritas });
+      showToast('Tugas berhasil ditambahkan');
+    }
+    closeModal();
+    if (currentPage === 'today') loadTodayPage();
+    else loadTasksPage();
+  } catch (err) {
+    showToast('Gagal menyimpan: ' + err.message, 'error');
+    btn.disabled = false;
+    btn.textContent = taskId ? 'Simpan Perubahan' : 'Tambah Tugas';
+  }
+}
+
+// ---------------------------------------------------------------
+// PAGE: PENGELUARAN
+// ---------------------------------------------------------------
+async function loadExpensesPage() {
+  setLoading('expenses-summary');
+  setLoading('expenses-list');
+  try {
+    const result = await api('getExpenses', expFilter);
+    expensesCache = result.expenses || [];
+    renderExpensesPage(result);
+  } catch (err) {
+    setError('expenses-summary', 'Gagal memuat data: ' + err.message);
+    document.getElementById('expenses-list').innerHTML = '';
+  }
+}
+
+function renderExpensesPage(result) {
+  const { expenses, total, breakdown } = result;
+
+  // Summary
+  let bdHtml = '';
+  const keys = Object.keys(breakdown || {});
+  if (keys.length) {
+    bdHtml = `<ul class="summary-breakdown">` +
+      keys.map(k => `<li><span class="breakdown-kat">${escape(k)}</span><span class="breakdown-amt">${formatRupiah(breakdown[k])}</span></li>`).join('') +
+      `</ul>`;
+  }
+
+  document.getElementById('expenses-summary').innerHTML = `
+    <div class="summary-total-label">Total Periode Ini</div>
+    <div class="summary-total-amount">${formatRupiah(total)}</div>
+    ${bdHtml}`;
+
+  // List
+  const list = document.getElementById('expenses-list');
+  if (!expenses.length) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">💰</div><p>Belum ada pengeluaran di periode ini</p></div>`;
+    return;
+  }
+  list.innerHTML = expenses.map(e => `
+    <div class="card expense-card">
+      <div class="expense-body">
+        <div class="expense-desc">${escape(e['Deskripsi'])}</div>
+        <div class="expense-meta">
+          <span class="badge badge-kategori">${escape(e['Kategori'])}</span>
+          · ${formatDate(e['Tanggal'])}
+          ${e['Catatan'] ? `· <em>${escape(e['Catatan'])}</em>` : ''}
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">
+        <span class="expense-amount">${formatRupiah(e['Jumlah'])}</span>
+        <button class="btn btn-sm btn-danger-outline" onclick="confirmDeleteExpense('${escape(e['Pengeluaran_ID'])}')">🗑️</button>
+      </div>
+    </div>`).join('');
+}
+
+async function confirmDeleteExpense(id) {
+  if (!confirm('Hapus pengeluaran ini?')) return;
+  try {
+    await api('deleteExpense', { id });
+    showToast('Pengeluaran dihapus');
+    loadExpensesPage();
+    if (currentPage === 'today') loadTodayPage();
+  } catch (err) {
+    showToast('Gagal menghapus: ' + err.message, 'error');
+  }
+}
+
+// Filter pengeluaran
+document.getElementById('exp-filter-kategori').addEventListener('change', function () {
+  expFilter.kategori = this.value;
+  expFilter.from = expFilter.to = '';
+  document.getElementById('exp-filter-from').value = '';
+  document.getElementById('exp-filter-to').value = '';
+  loadExpensesPage();
+});
+
+document.getElementById('exp-filter-from').addEventListener('change', applyDateFilter);
+document.getElementById('exp-filter-to').addEventListener('change', applyDateFilter);
+
+function applyDateFilter() {
+  expFilter.from = document.getElementById('exp-filter-from').value;
+  expFilter.to   = document.getElementById('exp-filter-to').value;
+  if (expFilter.from || expFilter.to) expFilter.month = '';
+  else expFilter.month = '';
+  loadExpensesPage();
+}
+
+document.getElementById('exp-filter-reset').addEventListener('click', () => {
+  expFilter = { month: '', kategori: '', from: '', to: '' };
+  document.getElementById('exp-filter-kategori').value = '';
+  document.getElementById('exp-filter-from').value = '';
+  document.getElementById('exp-filter-to').value = '';
+  loadExpensesPage();
+});
+
+// ---------------------------------------------------------------
+// FORM: PENGELUARAN
+// ---------------------------------------------------------------
+function openExpenseForm() {
+  const html = `
+    <div class="modal-header">
+      <h2>Tambah Pengeluaran</h2>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <form id="expense-form" onsubmit="submitExpenseForm(event)">
+      <div class="form-group">
+        <label for="ef-tanggal">Tanggal *</label>
+        <input id="ef-tanggal" type="date" value="${todayISO()}">
+        <div class="form-error" id="err-ef-tanggal">Wajib diisi</div>
+      </div>
+      <div class="form-group">
+        <label for="ef-kategori">Kategori *</label>
+        <select id="ef-kategori">
+          <option value="">-- Pilih --</option>
+          ${['Makan','Transport','Jajan','Kebutuhan','Lainnya'].map(k =>
+            `<option value="${k}">${k}</option>`
+          ).join('')}
+        </select>
+        <div class="form-error" id="err-ef-kategori">Wajib diisi</div>
+      </div>
+      <div class="form-group">
+        <label for="ef-deskripsi">Deskripsi *</label>
+        <input id="ef-deskripsi" type="text" placeholder="Contoh: Makan siang warteg">
+        <div class="form-error" id="err-ef-deskripsi">Wajib diisi</div>
+      </div>
+      <div class="form-group">
+        <label for="ef-jumlah">Jumlah (Rp) *</label>
+        <input id="ef-jumlah" type="number" min="1" placeholder="Contoh: 15000">
+        <div class="form-error" id="err-ef-jumlah">Harus angka positif</div>
+      </div>
+      <div class="form-group">
+        <label for="ef-catatan">Catatan (opsional)</label>
+        <input id="ef-catatan" type="text" placeholder="Tambahan info...">
+      </div>
+      <button type="submit" class="btn btn-primary" id="expense-submit-btn">Tambah Pengeluaran</button>
+    </form>`;
+  openModal(html);
+}
+
+async function submitExpenseForm(event) {
+  event.preventDefault();
+  let valid = true;
+
+  const tanggal  = document.getElementById('ef-tanggal').value;
+  const kategori = document.getElementById('ef-kategori').value;
+  const deskripsi = document.getElementById('ef-deskripsi').value.trim();
+  const jumlah   = document.getElementById('ef-jumlah').value;
+  const catatan  = document.getElementById('ef-catatan').value.trim();
+
+  const validate = (inputId, errId, cond) => {
+    document.getElementById(inputId).classList.toggle('error', !cond);
+    document.getElementById(errId).classList.toggle('visible', !cond);
+    if (!cond) valid = false;
+  };
+  validate('ef-tanggal',  'err-ef-tanggal',  !!tanggal);
+  validate('ef-kategori', 'err-ef-kategori', !!kategori);
+  validate('ef-deskripsi','err-ef-deskripsi',!!deskripsi);
+  validate('ef-jumlah',   'err-ef-jumlah',   !!jumlah && Number(jumlah) > 0);
+  if (!valid) return;
+
+  const btn = document.getElementById('expense-submit-btn');
+  btn.disabled = true;
+  btn.textContent = 'Menyimpan...';
+
+  try {
+    await api('addExpense', { Tanggal: tanggal, Kategori: kategori, Deskripsi: deskripsi, Jumlah: Number(jumlah), Catatan: catatan });
+    showToast('Pengeluaran berhasil ditambahkan');
+    closeModal();
+    if (currentPage === 'today') loadTodayPage();
+    else if (currentPage === 'expenses') loadExpensesPage();
+  } catch (err) {
+    showToast('Gagal menyimpan: ' + err.message, 'error');
+    btn.disabled = false;
+    btn.textContent = 'Tambah Pengeluaran';
+  }
+}
+
+// ---------------------------------------------------------------
+// PAGE: CATATAN HARIAN
+// ---------------------------------------------------------------
+async function loadNotesPage() {
+  setLoading('notes-list');
+  try {
+    notesCache = await api('getNotes');
+    renderNotesList();
+  } catch (err) {
+    setError('notes-list', 'Gagal memuat catatan: ' + err.message);
+  }
+}
+
+function renderNotesList() {
+  const container = document.getElementById('notes-list');
+  if (!notesCache.length) {
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">📓</div><p>Belum ada catatan harian</p></div>`;
+    return;
+  }
+  container.innerHTML = notesCache.map(n => `
+    <div class="card note-card" onclick="openNoteDetail('${escape(n['Catatan_ID'])}')">
+      <div class="note-header">
+        <span class="note-date">${formatDate(n['Tanggal'])}</span>
+        <span class="note-mood">${moodEmoji(n['Mood'])}</span>
+      </div>
+      <div class="note-preview">${escape(n['preview'] || n['Isi_Catatan'] || '')}</div>
+      <div class="note-actions" onclick="event.stopPropagation()">
+        <button class="btn btn-sm btn-danger-outline" onclick="confirmDeleteNote('${escape(n['Catatan_ID'])}')">🗑️ Hapus</button>
+      </div>
+    </div>`).join('');
+}
+
+async function openNoteDetail(noteId) {
+  try {
+    const n = await api('getNoteDetail', { id: noteId });
+    const html = `
+      <div class="modal-header">
+        <h2>Catatan Harian</h2>
+        <button class="modal-close" onclick="closeModal()">×</button>
+      </div>
+      <div class="note-detail-date">${formatDate(n['Tanggal'])}</div>
+      ${n['Mood'] ? `<div class="note-detail-mood">${moodEmoji(n['Mood'])} ${escape(n['Mood'])}</div>` : ''}
+      <div class="divider"></div>
+      <div class="note-detail-body">${escape(n['Isi_Catatan'])}</div>`;
+    openModal(html);
+  } catch (err) {
+    showToast('Gagal memuat catatan: ' + err.message, 'error');
+  }
+}
+
+async function confirmDeleteNote(noteId) {
+  if (!confirm('Hapus catatan ini?')) return;
+  try {
+    await api('deleteNote', { id: noteId });
+    showToast('Catatan dihapus');
+    loadNotesPage();
+  } catch (err) {
+    showToast('Gagal menghapus: ' + err.message, 'error');
+  }
+}
+
+// ---------------------------------------------------------------
+// FORM: CATATAN HARIAN
+// ---------------------------------------------------------------
+function openNoteForm() {
+  const today = todayISO();
+  // Cek apakah sudah ada catatan di tanggal hari ini
+  const existsToday = notesCache.some(n => n['Tanggal'] === today);
+
+  const warningHtml = existsToday
+    ? `<div class="modal-warning">⚠️ Kamu sudah punya catatan untuk hari ini. Mau tetap tambah catatan baru?</div>`
+    : '';
+
+  const html = `
+    <div class="modal-header">
+      <h2>Tulis Catatan</h2>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    ${warningHtml}
+    <form id="note-form" onsubmit="submitNoteForm(event)">
+      <div class="form-group">
+        <label for="nf-tanggal">Tanggal *</label>
+        <input id="nf-tanggal" type="date" value="${today}">
+        <div class="form-error" id="err-nf-tanggal">Wajib diisi</div>
+      </div>
+      <div class="form-group">
+        <label for="nf-isi">Isi Catatan *</label>
+        <textarea id="nf-isi" placeholder="Tulis apa yang kamu rasakan atau alami hari ini..." style="min-height:140px"></textarea>
+        <div class="form-error" id="err-nf-isi">Wajib diisi</div>
+      </div>
+      <div class="form-group">
+        <label for="nf-mood">Mood (opsional)</label>
+        <select id="nf-mood">
+          <option value="">-- Pilih mood --</option>
+          <option value="Baik">😊 Baik</option>
+          <option value="Biasa">😐 Biasa</option>
+          <option value="Kurang Baik">😔 Kurang Baik</option>
+        </select>
+      </div>
+      <button type="submit" class="btn btn-primary" id="note-submit-btn">Simpan Catatan</button>
+    </form>`;
+  openModal(html);
+
+  // Kalau tanggal berubah, cek ulang duplikat
+  document.getElementById('nf-tanggal').addEventListener('change', function() {
+    const existing = notesCache.some(n => n['Tanggal'] === this.value);
+    let warn = document.querySelector('#modal-panel .modal-warning');
+    if (existing && !warn) {
+      const warning = document.createElement('div');
+      warning.className = 'modal-warning';
+      warning.textContent = '⚠️ Kamu sudah punya catatan untuk tanggal ini. Mau tetap tambah catatan baru?';
+      document.getElementById('note-form').insertAdjacentElement('beforebegin', warning);
+    } else if (!existing && warn) {
+      warn.remove();
+    }
+  });
+}
+
+async function submitNoteForm(event) {
+  event.preventDefault();
+  let valid = true;
+
+  const tanggal = document.getElementById('nf-tanggal').value;
+  const isi     = document.getElementById('nf-isi').value.trim();
+  const mood    = document.getElementById('nf-mood').value;
+
+  const validate = (inputId, errId, cond) => {
+    document.getElementById(inputId).classList.toggle('error', !cond);
+    document.getElementById(errId).classList.toggle('visible', !cond);
+    if (!cond) valid = false;
+  };
+  validate('nf-tanggal', 'err-nf-tanggal', !!tanggal);
+  validate('nf-isi',     'err-nf-isi',     !!isi);
+  if (!valid) return;
+
+  const btn = document.getElementById('note-submit-btn');
+  btn.disabled = true;
+  btn.textContent = 'Menyimpan...';
+
+  try {
+    await api('addNote', { Tanggal: tanggal, Isi_Catatan: isi, Mood: mood });
+    showToast('Catatan berhasil disimpan');
+    closeModal();
+    if (currentPage === 'today') loadTodayPage();
+    else if (currentPage === 'notes') loadNotesPage();
+  } catch (err) {
+    showToast('Gagal menyimpan: ' + err.message, 'error');
+    btn.disabled = false;
+    btn.textContent = 'Simpan Catatan';
+  }
+}
+
+// ---------------------------------------------------------------
+// INIT
+// ---------------------------------------------------------------
+document.addEventListener('DOMContentLoaded', () => {
+  const user = getSessionUser();
+  if (user) {
+    showMainApp(user);
+    showPage('today');
+  } else {
+    showLoginPage();
+  }
+});
+</script>
