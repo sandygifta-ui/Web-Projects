@@ -13,7 +13,7 @@
 [![Live App](https://img.shields.io/badge/🔗_LIVE_APP-2E7D32?style=for-the-badge)](https://script.google.com/macros/s/AKfycbzZ4PaC2Q9ZOMTBXZqPlWmTDlfrCFnqT8YFufp8Hv2XTCWAI8I3FeWbF_2p9ynI46oBkA/exec)
 [![Apps Script](https://img.shields.io/badge/Apps_Script-4285F4?style=for-the-badge&logo=google&logoColor=white)](https://script.google.com/u/0/home/projects/1YBWoR2zQ5IdI56CEz__Iv3my4ME2t4JvwUsm_kV4ru-89FILSUWvSZWZ/edit)
 [![Database](https://img.shields.io/badge/📄_Database-6D4C2F?style=for-the-badge)](https://docs.google.com/spreadsheets/d/1fvmllheFzTEdvJtHjJQBoe-xsSUz1vW64VQmsl5eflA/edit?gid=1693181949#gid=1693181949)
-[![Edusoft Portfolio](https://img.shields.io/badge/🎓_Edusoft_Portfolio-7C3AED?style=for-the-badge)](https://edusoft.id/portfolio)
+[![Edusoft Portfolio](https://img.shields.io/badge/🎓_Edusoft_Portfolio-7C3AED?style=for-the-badge)](https://portfolio.edusoftcenter.com/contributors/sandya-gifta-ulimaz-sofiamagaski)
 
 </div>
 
