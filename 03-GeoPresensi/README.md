@@ -141,11 +141,11 @@
 
 | Role | Username | Password |
 |---|---|---|
-| Admin / HRD | `admin` | `admin123` |
-| Admin / HRD | `hrd` | `hrd12345` |
-| Karyawan | `K001` | `presensi123` |
-| Karyawan | `K002` | `presensi123` |
-| Karyawan | `K003` | `presensi123` |
+| Admin / HRD | `admin` | `AdminKantor` |
+| Admin / HRD | `hrd` | `AdminKantor` |
+| Karyawan | `K001` | `AdminKantor` |
+| Karyawan | `K002` | `AdminKantor` |
+| Karyawan | `K003` | `AdminKantor` |
 
 Untuk login sebagai karyawan, pilih tab **"Karyawan"** di halaman login sebelum memasukkan username.
 
