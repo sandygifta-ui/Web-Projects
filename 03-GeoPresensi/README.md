@@ -60,15 +60,15 @@
 
 | Login | Dashboard |
 |:---:|:---:|
-| ![Login](../Documentation/1-Tampilan_Login_Presensi.png) | ![Dashboard](../Documentation/2-Halaman_Dashboard.png) |
+| ![Login](https://github.com/sandygifta-ui/Web-Projects/blob/main/03-GeoPresensi/Documentation/1-Tampilan_Login_Presensi.png?raw=true) | ![Dashboard](https://github.com/sandygifta-ui/Web-Projects/blob/main/03-GeoPresensi/Documentation/2-Halaman_Dashboard.png?raw=true) |
 
 | Form Absen | Master Karyawan |
 |:---:|:---:|
-| ![Form Absen](../Documentation/3-Form_absen.png) | ![Master Karyawan](../Documentation/4-Master_Karyawan.png) |
+| ![Form Absen](https://github.com/sandygifta-ui/Web-Projects/blob/main/03-GeoPresensi/Documentation/3-Form_absen.png?raw=true) | ![Master Karyawan](https://github.com/sandygifta-ui/Web-Projects/blob/main/03-GeoPresensi/Documentation/4-Master_Karyawan.png?raw=true) |
 
 | Report & Laporan |
 |:---:|
-| ![Report](../Documentation/5-Report_Laporan.png) |
+| ![Report](https://github.com/sandygifta-ui/Web-Projects/blob/main/03-GeoPresensi/Documentation/5-Report_Laporan.png?raw=true) |
 
 </div>
 
@@ -148,6 +148,14 @@
 | Karyawan | `K003` | `presensi123` |
 
 Untuk login sebagai karyawan, pilih tab **"Karyawan"** di halaman login sebelum memasukkan username.
+
+> **❗ Tidak bisa login?** Ikuti langkah berikut:
+> 1. Buka **Apps Script Editor** → pilih fungsi `setupUsers` dari dropdown
+> 2. Klik **▶ Run** — ini akan **menghapus & membuat ulang** sheet Users dengan password yang sudah di-hash dengan benar
+> 3. Berikan izin akses jika diminta (Authorization required)
+> 4. Setelah selesai, coba login kembali dengan kredensial di atas
+>
+> **Penyebab umum:** Jika sheet Users pernah diisi manual (bukan via `setupUsers()`), password tidak akan ter-hash dengan benar dan login akan selalu gagal.
 
 <br/>
 
