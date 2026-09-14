@@ -143,9 +143,9 @@
 |---|---|---|
 | Admin / HRD | `admin` | `AdminKantor` |
 | Admin / HRD | `hrd` | `AdminKantor` |
-| Karyawan | `K001` | `AdminKantor` |
-| Karyawan | `K002` | `AdminKantor` |
-| Karyawan | `K003` | `AdminKantor` |
+| Karyawan | `K001` | `passwordK001` |
+| Karyawan | `K002` | `passwprdK002` |
+| Karyawan | `K003` | `passwordK003` |
 
 Untuk login sebagai karyawan, pilih tab **"Karyawan"** di halaman login sebelum memasukkan username.
 
