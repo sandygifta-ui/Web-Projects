@@ -326,10 +326,7 @@ function bersihkanSesiExpired() {
 // setupUsers() — Inisialisasi Sheet "Users" dengan akun default
 // Jalankan SATU KALI, atau otomatis dipanggil saat loginUser()
 // tidak menemukan sheet Users.
-// Password default:
-//   admin    → admin123
-//   hrd      → hrd12345
-//   K001–K003 → presensi123
+// Password default semua akun: AdminKantor
 // ============================================================
 function setupUsers() {
   var ss    = getSheetsApp();
@@ -341,13 +338,14 @@ function setupUsers() {
   sheet.appendRow(["Username", "Password (SHA-256)", "Role", "Nama Lengkap", "Aktif"]);
   sheet.getRange(1, 1, 1, 5).setFontWeight("bold").setBackground("#1E1B4B").setFontColor("white");
 
-  // Data akun default
+  // Data akun default — password: AdminKantor
+  var pw = hashPassword("AdminKantor");
   var akuns = [
-    ["admin",  hashPassword("admin123"),    "admin",    "Administrator",   true],
-    ["hrd",    hashPassword("hrd12345"),    "admin",    "Staff HRD",       true],
-    ["K001",   hashPassword("presensi123"), "karyawan", "Budi Santoso",    true],
-    ["K002",   hashPassword("presensi123"), "karyawan", "Siti Rahayu",     true],
-    ["K003",   hashPassword("presensi123"), "karyawan", "Ahmad Fauzi",     true]
+    ["admin",  pw, "admin",    "Administrator",   true],
+    ["hrd",    pw, "admin",    "Staff HRD",       true],
+    ["K001",   pw, "karyawan", "Budi Santoso",    true],
+    ["K002",   pw, "karyawan", "Siti Rahayu",     true],
+    ["K003",   pw, "karyawan", "Ahmad Fauzi",     true]
   ];
 
   akuns.forEach(function(row) { sheet.appendRow(row); });
