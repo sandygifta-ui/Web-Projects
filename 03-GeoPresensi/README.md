@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="https://img.icons8.com/color/96/geo-fence.png" width="80" alt="location icon"/>
+<img src="https://img.icons8.com/?size=100&id=iUor4lyI46VF&format=png&color=000000" width="80" alt="location icon"/>
 
 # 📍 GeoPresensi
 
